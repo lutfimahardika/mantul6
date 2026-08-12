@@ -259,6 +259,7 @@ mark{background:#fef9c3;color:inherit;border-radius:2px;padding:0 1px;}
 
 /* ===== Card grids ===== */
 .cards-2col{display:grid;grid-template-columns:1fr;gap:1rem;}
+.cards-2col[hidden]{display:none;}
 @media (min-width:1025px){.cards-2col{grid-template-columns:repeat(2,1fr);}}
 
 .pm-card{background:#fff;border:1px solid var(--color-border-subtle);border-radius:var(--radius-2xl);padding:1.25rem;transition:border-color .15s;}
@@ -304,6 +305,8 @@ mark{background:#fef9c3;color:inherit;border-radius:2px;padding:0 1px;}
 .meter-card__add-btn{font-size:12px;color:var(--gray-500);border:1px solid var(--color-border);border-radius:var(--radius-xl);padding:0.5rem 1rem;background:#fff;cursor:pointer;align-self:flex-start;transition:color .15s,border-color .15s;font-weight:600;}
 .meter-card__add-btn:hover{color:var(--gray-800);border-color:var(--gray-300);}
 .meter-card__add-form{display:flex;gap:0.5rem;flex-wrap:wrap;}
+.meter-card__add-form[hidden]{display:none;}
+.meter-card__add-label{font-size:11px;font-weight:600;color:var(--gray-500);width:100%;}
 .meter-card__add-input{flex:1;min-width:6rem;background:var(--gray-50);border:1px solid var(--color-border);border-radius:var(--radius-xl);padding:0.5rem 0.75rem;font-size:0.875rem;color:var(--gray-800);outline:none;}
 .meter-card__add-input::placeholder{color:var(--gray-300);}
 .meter-card__add-input:focus{border-color:var(--gray-400);}
@@ -1585,6 +1588,34 @@ function renderMetersShell(){
     + '<div class="cards-2col" id="rhCards"></div>';
 }
 function rhIsNumeric(v){ if(v===''||v==null) return false; return /^-?\d+(\.\d+)?$/.test(String(v).trim()); }
+function rhIsDateLike(v){
+  if(v===''||v==null) return false;
+  const s = String(v).trim();
+  return /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/.test(s) || /^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}$/.test(s) || /^\d{1,2}\s+[A-Za-z]+\s+\d{4}$/.test(s);
+}
+const RH_UNIT_LABEL = { jam:'jam', kali:'kali', tanggal:'tanggal' };
+function rhDetectUnit(weeksObj, isMain){
+  const vals = Object.keys(weeksObj||{}).map(function(k){ return weeksObj[k]; }).filter(function(v){ return v!==''&&v!=null; });
+  if(vals.some(rhIsDateLike)) return 'tanggal';
+  return isMain ? 'jam' : 'kali';
+}
+function rhNormalizeUnitLabel(raw){
+  const s = String(raw||'').trim().toLowerCase();
+  if(!s) return null;
+  if(s.indexOf('date')>-1 || s.indexOf('tanggal')>-1 || s.indexOf('tgl')>-1) return 'tanggal';
+  if(s.indexOf('count')>-1 || s.indexOf('kali')>-1 || s.indexOf('cycle')>-1 || s.indexOf('siklus')>-1) return 'kali';
+  if(s.indexOf('hour')>-1 || s.indexOf('jam')>-1) return 'jam';
+  return null;
+}
+function rhUnitOf(row, isMain){
+  if(row && row.unit && RH_UNIT_LABEL[row.unit]) return row.unit;
+  return rhDetectUnit(row ? row.weeks : {}, isMain);
+}
+function rhFormatValue(v, unit){
+  if(v===''||v==null) return '—';
+  if(unit==='tanggal') return esc(v);
+  return esc(v)+' '+RH_UNIT_LABEL[unit];
+}
 function rhParseGviz(text){
   const start=text.indexOf('{'), end=text.lastIndexOf('}');
   if(start===-1||end===-1) throw new Error('Format response tidak valid');
@@ -1593,20 +1624,30 @@ function rhParseGviz(text){
   if(!obj.table||!obj.table.cols) throw new Error('Tab "Running Hour" tidak ditemukan atau kosong');
   const cols = obj.table.cols.map(function(c){ return (c.label||'').trim(); });
   const rows = obj.table.rows || [];
-  const weekCols = cols.slice(2);
+  /* Locate Area / Nama Mesin / Unit by header name (not fixed position), so an added
+     "Unit" column anywhere in the sheet doesn't shift the week columns. Everything
+     else is treated as a week column, in its original left-to-right order. */
+  const areaIdx = cols.findIndex(function(l){ return /^area$/i.test(l); });
+  const namaIdx = cols.findIndex(function(l){ return /nama/i.test(l); });
+  const unitIdx = cols.findIndex(function(l){ return /^unit$/i.test(l); });
+  const metaIdx = [areaIdx, namaIdx, unitIdx].filter(function(i){ return i>-1; });
+  const weekIdxList = cols.map(function(l,i){ return i; }).filter(function(i){ return metaIdx.indexOf(i)===-1 && cols[i]; });
   const rawRows = rows.map(function(row){
     const cells = row.c || [];
-    const area = cells[0] && cells[0].v!=null ? String(cells[0].v).trim() : '';
-    const nama = cells[1] && cells[1].v!=null ? String(cells[1].v).trim() : '';
+    const cellStr = function(idx){ return (idx>-1 && cells[idx] && cells[idx].v!=null) ? String(cells[idx].v).trim() : ''; };
+    const area = areaIdx>-1 ? cellStr(areaIdx) : '';
+    const nama = namaIdx>-1 ? cellStr(namaIdx) : cellStr(1);
+    const unit = unitIdx>-1 ? rhNormalizeUnitLabel(cellStr(unitIdx)) : null;
     const weeks = {};
-    weekCols.forEach(function(label,i){ if(!label) return; const cell=cells[i+2]; const f=cell?cell.f:undefined; const v=cell?cell.v:''; weeks[label] = (f!=null&&f!=='') ? f : (v==null?'':v); });
-    return { area:area, nama:nama, weeks:weeks };
+    weekIdxList.forEach(function(idx){ const label=cols[idx]; if(!label) return; const cell=cells[idx]; const f=cell?cell.f:undefined; const v=cell?cell.v:''; weeks[label] = (f!=null&&f!=='') ? f : (v==null?'':v); });
+    return { area:area, nama:nama, unit:unit, weeks:weeks };
   }).filter(function(r){ return r.nama; });
+  const weekCols = weekIdxList.map(function(i){ return cols[i]; });
   const machines = []; let currentParent = null;
   rawRows.forEach(function(r){
     const isSub = r.nama.indexOf('-')===0;
-    if(isSub && currentParent) currentParent.subs.push({ label:r.nama.replace(/^-+\s*/,''), weeks:r.weeks });
-    else { currentParent = { area:r.area, nama:r.nama, weeks:r.weeks, subs:[] }; machines.push(currentParent); }
+    if(isSub && currentParent) currentParent.subs.push({ label:r.nama.replace(/^-+\s*/,''), weeks:r.weeks, unit:r.unit });
+    else { currentParent = { area:r.area, nama:r.nama, weeks:r.weeks, unit:r.unit, subs:[] }; machines.push(currentParent); }
   });
   return { weekLabels: weekCols.filter(Boolean), machines: machines };
 }
@@ -1682,18 +1723,27 @@ function rhBuildChartSVG(labels, values){
 function rhOpenDetail(idx){
   const m = rhFiltered[idx]; if(!m) return;
   const weeks = rhData.weekLabels; const info = rhLatestInfo(m);
-  const chartLabels=[], chartValues=[];
-  weeks.forEach(function(w){ const v=m.weeks[w]; if(rhIsNumeric(v)){ chartLabels.push(w); chartValues.push(Number(v)); } });
-  const chartHtml = chartValues.length>=2 ? ('<div style="overflow-x:auto;margin:0 -4px 4px;padding:4px 4px 0">'+rhBuildChartSVG(chartLabels,chartValues)+'</div>') : '<div style="font-size:12px;color:var(--gray-400);padding:10px 0 4px">Data belum cukup untuk menampilkan grafik.</div>';
+  const unit = rhUnitOf(m, true);
+  let chartHtml;
+  if(unit==='tanggal'){
+    const rows = weeks.map(function(w){ const v=m.weeks[w]; return (v!==''&&v!=null) ? '<div class="drawer__row"><span>'+w+'</span><span>'+esc(v)+'</span></div>' : ''; }).join('');
+    chartHtml = rows ? '<div class="drawer__rows">'+rows+'</div>' : '<div style="font-size:12px;color:var(--gray-400);padding:10px 0 4px">Belum ada riwayat penggantian.</div>';
+  } else {
+    const chartLabels=[], chartValues=[];
+    weeks.forEach(function(w){ const v=m.weeks[w]; if(rhIsNumeric(v)){ chartLabels.push(w); chartValues.push(Number(v)); } });
+    chartHtml = chartValues.length>=2 ? ('<div style="overflow-x:auto;margin:0 -4px 4px;padding:4px 4px 0">'+rhBuildChartSVG(chartLabels,chartValues)+'</div>') : '<div style="font-size:12px;color:var(--gray-400);padding:10px 0 4px">Data belum cukup untuk menampilkan grafik.</div>';
+  }
   let subsHtml = '';
   if(m.subs.length){
     subsHtml = '<p class="drawer__section-label">Sub Item</p>' + m.subs.map(function(s){
-      const rows = weeks.map(function(w){ const v=s.weeks[w]; return '<div class="drawer__row"><span>'+w+'</span><span>'+(v!==''&&v!=null?esc(v):'—')+'</span></div>'; }).join('');
-      return '<div style="margin-bottom:14px"><div style="font-size:13px;font-weight:700;margin-bottom:6px">'+esc(s.label)+'</div><div class="drawer__rows">'+rows+'</div></div>';
+      const sUnit = rhUnitOf(s, false);
+      const rows = weeks.map(function(w){ const v=s.weeks[w]; return '<div class="drawer__row"><span>'+w+'</span><span>'+rhFormatValue(v,sUnit)+'</span></div>'; }).join('');
+      return '<div style="margin-bottom:14px"><div style="font-size:13px;font-weight:700;margin-bottom:6px">'+esc(s.label)+' <span style="font-weight:500;color:var(--gray-400);font-size:11px">('+RH_UNIT_LABEL[sUnit]+')</span></div><div class="drawer__rows">'+rows+'</div></div>';
     }).join('');
   }
-  const html = '<div class="drawer__header"><div><p class="drawer__id">'+esc(m.area||'—')+'</p><h2 class="drawer__title">'+esc(m.nama)+'</h2></div>'+drawerCloseBtnHtml()+'</div>'
-    + '<div class="drawer__body"><div style="font-size:1.375rem;font-weight:700">'+(info.value!=null?esc(info.value):'—')+(rhIsNumeric(info.value)?' <span style="font-size:12px;font-weight:600;color:var(--gray-400)">jam</span>':'')+'</div><div><p class="drawer__section-label">Riwayat Mingguan</p>'+chartHtml+'</div>'+subsHtml+'</div>';
+  const unitLabel = unit==='tanggal' ? 'Terakhir diganti' : ('Pembacaan terakhir · '+RH_UNIT_LABEL[unit]);
+  const html = '<div class="drawer__header"><div><p class="drawer__id">'+esc(m.area||'—')+' · '+unitLabel+'</p><h2 class="drawer__title">'+esc(m.nama)+'</h2></div>'+drawerCloseBtnHtml()+'</div>'
+    + '<div class="drawer__body"><div style="font-size:1.375rem;font-weight:700">'+(info.value!=null?esc(info.value):'—')+(unit!=='tanggal'&&info.value!=null?' <span style="font-size:12px;font-weight:600;color:var(--gray-400)">'+RH_UNIT_LABEL[unit]+'</span>':'')+'</div><div><p class="drawer__section-label">'+(unit==='tanggal'?'Riwayat Penggantian':'Riwayat Mingguan')+'</p>'+chartHtml+'</div>'+subsHtml+'</div>';
   openDrawer(html);
 }
 function rhRender(){
@@ -1701,17 +1751,25 @@ function rhRender(){
   if(rhFiltered.length===0){ cards.innerHTML = '<div class="state-empty" style="grid-column:1/-1">'+icon('search',26)+'<p>Tidak ada mesin ditemukan</p></div>'; return; }
   cards.innerHTML = rhFiltered.map(function(m,i){
     const info = rhLatestInfo(m);
+    const unit = rhUnitOf(m, true);
     let deltaHtml = '<span style="font-size:12px;color:var(--gray-400)">—</span>';
-    if(info.value!=null && info.prevValue!=null && rhIsNumeric(info.value) && rhIsNumeric(info.prevValue)){
+    if(unit!=='tanggal' && info.value!=null && info.prevValue!=null && rhIsNumeric(info.value) && rhIsNumeric(info.prevValue)){
       const d = Number(info.value)-Number(info.prevValue); const sign = d>0?'+':''; const color = d>0?'var(--green-600)':d<0?'var(--red-600)':'var(--gray-400)';
-      deltaHtml = '<span style="font-size:12px;color:'+color+';font-weight:700">'+sign+d+' jam vs minggu lalu</span>';
+      deltaHtml = '<span style="font-size:12px;color:'+color+';font-weight:700">'+sign+d+' '+RH_UNIT_LABEL[unit]+' vs minggu lalu</span>';
+    } else if(unit==='tanggal' && info.value!=null){
+      deltaHtml = '<span style="font-size:12px;color:var(--gray-400)">Terakhir diganti pada minggu '+esc(info.label)+'</span>';
     }
-    const latestDisplay = info.value!=null ? (esc(info.value)+(rhIsNumeric(info.value)?'':'')) : '—';
+    const latestDisplay = info.value!=null ? esc(info.value) : '—';
     const subBadge = m.subs.length ? '<span class="badge badge--sm badge--gray">+'+m.subs.length+'</span>' : '';
+    const readingLabel = unit==='tanggal' ? 'Tanggal Terakhir Diganti' : 'Pembacaan Terakhir';
+    const addBtnLabel = unit==='tanggal' ? '+ Catat Tanggal Penggantian' : '+ Catat Pembacaan';
+    const valueInputHtml = unit==='tanggal'
+      ? '<input type="date" class="meter-card__add-input rh-value-input">'
+      : '<input type="number" class="meter-card__add-input rh-value-input" placeholder="Pembacaan ('+RH_UNIT_LABEL[unit]+')">';
     return '<div class="meter-card" data-rh-idx="'+i+'">'
       + '<div class="meter-card__top"><div><div class="meter-card__id-row"><span class="meter-card__id">'+esc(m.area||'—')+'</span>'+subBadge+'</div><div class="meter-card__name" data-rh-open="'+i+'">'+esc(m.nama)+'</div></div><span class="meter-card__icon" data-rh-open="'+i+'">'+icon('activity',16)+'</span></div>'
-      + '<div class="meter-card__reading-box"><div class="meter-card__reading-label">Reading Terakhir'+(info.label?' · '+info.label:'')+'</div><div class="meter-card__reading-value"><span class="meter-card__reading-num">'+latestDisplay+'</span>'+(rhIsNumeric(info.value)?'<span class="meter-card__reading-unit">jam</span>':'')+'</div><div class="meter-card__reading-rate">'+deltaHtml+'</div></div>'
-      + '<div class="meter-card__enter-wrap" data-rh-idx2="'+i+'"><button type="button" class="meter-card__add-btn" data-action="rh-toggle-add">+ Catat Reading</button><div class="meter-card__add-form" hidden><input type="text" class="meter-card__add-input rh-week-input" placeholder="Minggu (mis. '+rhGuessNextWeekLabel()+')" value="'+rhGuessNextWeekLabel()+'"><input type="number" class="meter-card__add-input rh-value-input" placeholder="Reading (jam)"><button type="button" class="meter-card__save-btn" data-action="rh-save">Simpan</button><button type="button" class="meter-card__cancel-btn" data-action="rh-cancel">Batal</button></div></div>'
+      + '<div class="meter-card__reading-box"><div class="meter-card__reading-label">'+readingLabel+(info.label?' · '+info.label:'')+'</div><div class="meter-card__reading-value"><span class="meter-card__reading-num">'+latestDisplay+'</span>'+(unit!=='tanggal'&&info.value!=null?'<span class="meter-card__reading-unit">'+RH_UNIT_LABEL[unit]+'</span>':'')+'</div><div class="meter-card__reading-rate">'+deltaHtml+'</div></div>'
+      + '<div class="meter-card__enter-wrap" data-rh-idx2="'+i+'" data-rh-unit="'+unit+'"><button type="button" class="meter-card__add-btn" data-action="rh-toggle-add">'+addBtnLabel+'</button><div class="meter-card__add-form" hidden><span class="meter-card__add-label">Minggu</span><input type="text" class="meter-card__add-input rh-week-input" placeholder="mis. '+rhGuessNextWeekLabel()+'" value="'+rhGuessNextWeekLabel()+'"><span class="meter-card__add-label">'+(unit==='tanggal'?'Tanggal Penggantian':'Pembacaan ('+RH_UNIT_LABEL[unit]+')')+'</span>'+valueInputHtml+'<button type="button" class="meter-card__save-btn" data-action="rh-save">Simpan</button><button type="button" class="meter-card__cancel-btn" data-action="rh-cancel">Batal</button></div></div>'
       + '</div>';
   }).join('');
 }
@@ -1720,7 +1778,7 @@ async function rhSaveReading(idx, wrap){
   const week = wrap.querySelector('.rh-week-input').value.trim();
   const value = wrap.querySelector('.rh-value-input').value.trim();
   if(!week){ alert('Isi label minggu (mis. W31)'); return; }
-  if(value===''){ alert('Isi nilai running hour'); return; }
+  if(value===''){ alert('Isi nilai pembacaan'); return; }
   const saveBtn = wrap.querySelector('[data-action="rh-save"]');
   saveBtn.disabled = true; saveBtn.textContent = 'Menyimpan...';
   try {
