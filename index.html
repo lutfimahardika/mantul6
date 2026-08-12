@@ -1,0 +1,1430 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CriticalMaint — CMS for Maintenance System</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root{
+  --color-bg:#FAFAFA;
+  --color-surface:#FFFFFF;
+  --color-border:#E5E7EB;
+  --color-border-subtle:#F3F4F6;
+  --color-primary:#023f88;
+  --color-primary-hover:#012d63;
+  --color-text:#111827;
+  --color-text-muted:#6B7280;
+  --color-text-dim:#9CA3AF;
+
+  --gray-50:#F9FAFB;
+  --gray-100:#F3F4F6;
+  --gray-200:#E5E7EB;
+  --gray-300:#D1D5DB;
+  --gray-400:#9CA3AF;
+  --gray-500:#6B7280;
+  --gray-600:#4B5563;
+  --gray-700:#374151;
+  --gray-800:#1F2937;
+  --gray-900:#111827;
+
+  --blue-50:#EFF6FF; --blue-100:#DBEAFE; --blue-400:#60A5FA; --blue-600:#2563EB;
+  --amber-50:#FFFBEB; --amber-100:#FEF3C7; --amber-400:#FBBF24; --amber-600:#D97706;
+  --green-50:#F0FDF4; --green-100:#DCFCE7; --green-400:#4ADE80; --green-600:#16A34A;
+  --red-50:#FEF2F2; --red-100:#FEE2E2; --red-400:#F87171; --red-600:#DC2626;
+  --purple-50:#FAF5FF; --purple-100:#F3E8FF; --purple-400:#C084FC; --purple-600:#9333EA;
+  --orange-50:#FFF7ED; --orange-100:#FFEDD5; --orange-400:#FB923C; --orange-600:#EA580C;
+
+  --radius-lg:0.5rem;
+  --radius-xl:0.75rem;
+  --radius-2xl:1rem;
+  --radius-full:9999px;
+
+  --font-sans:'Inter', system-ui, sans-serif;
+
+  --sidebar-w:210px;
+  --sidebar-w-collapsed:56px;
+  --header-h:3.5rem;
+}
+
+*{box-sizing:border-box; scrollbar-width:thin; scrollbar-color:#E5E7EB transparent;}
+*::-webkit-scrollbar{width:4px;height:4px;}
+*::-webkit-scrollbar-track{background:transparent;}
+*::-webkit-scrollbar-thumb{background:#E5E7EB;border-radius:2px;}
+
+html,body{height:100%;margin:0;padding:0;}
+body{
+  background:var(--color-bg);
+  color:var(--color-text);
+  font-family:var(--font-sans);
+  -webkit-font-smoothing:antialiased;
+  font-size:14px;
+}
+button, input{font-family:var(--font-sans);}
+button{-webkit-tap-highlight-color:transparent;}
+
+/* ===== App shell ===== */
+.app{display:flex;height:100vh;overflow:hidden;background:var(--color-bg);}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.1);z-index:40;display:none;}
+.overlay--visible{display:block;}
+@media (min-width:1025px){.overlay{display:none !important;}}
+
+/* ===== Sidebar ===== */
+.sidebar{
+  width:var(--sidebar-w);
+  height:100%;
+  background:#fff;
+  border-right:1px solid var(--color-border-subtle);
+  display:flex;
+  flex-direction:column;
+  flex-shrink:0;
+  transition:width .2s ease, transform .2s ease;
+  z-index:50;
+}
+.sidebar--collapsed{width:var(--sidebar-w-collapsed);}
+@media (max-width:1024px){
+  .sidebar{position:fixed;top:0;left:0;transform:translateX(-100%);width:var(--sidebar-w) !important;}
+  .sidebar--open{transform:translateX(0);}
+}
+
+.sidebar__logo{display:flex;align-items:center;gap:0.75rem;height:var(--header-h);border-bottom:1px solid var(--color-border-subtle);padding:0 1rem;flex-shrink:0;}
+.sidebar--collapsed .sidebar__logo{justify-content:center;padding:0;gap:0;}
+.sidebar__logo-badge{width:1.75rem;height:1.75rem;border-radius:var(--radius-lg);background:var(--color-primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sidebar__logo-badge span{color:#fff;font-weight:700;font-size:11px;}
+.sidebar__logo-text{min-width:0;}
+.sidebar--collapsed .sidebar__logo-text{display:none;}
+.sidebar__logo-title{font-size:0.875rem;font-weight:600;color:var(--gray-900);line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sidebar__logo-sub{font-size:11px;color:var(--gray-400);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+.sidebar__nav{flex:1;padding:0.75rem 0;overflow-y:auto;}
+.sidebar__nav-item{width:100%;display:flex;align-items:center;gap:0.75rem;padding:0.625rem 0.75rem;text-align:left;position:relative;background:none;border:none;cursor:pointer;color:var(--gray-400);transition:color .15s,background-color .15s;}
+.sidebar__nav-item:hover{color:var(--gray-700);background:var(--gray-50);}
+.sidebar__nav-item--active{color:var(--color-primary);background:var(--blue-50);}
+.sidebar__nav-item--active:hover{color:var(--color-primary);background:var(--blue-50);}
+.sidebar--collapsed .sidebar__nav-item{justify-content:center;}
+.sidebar__nav-icon{flex-shrink:0;display:flex;}
+.sidebar__nav-label{font-size:13px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sidebar--collapsed .sidebar__nav-label,.sidebar--collapsed .sidebar__nav-badge{display:none;}
+.sidebar__nav-badge{font-size:11px;font-weight:500;background:var(--gray-200);color:var(--gray-600);border-radius:var(--radius-full);padding:1px 6px;min-width:1.25rem;text-align:center;}
+.sidebar__nav-dot{display:none;position:absolute;top:0.5rem;right:0.5rem;width:6px;height:6px;border-radius:var(--radius-full);background:var(--gray-400);}
+.sidebar--collapsed .sidebar__nav-item--has-badge .sidebar__nav-dot{display:block;}
+
+.sidebar__bottom{border-top:1px solid var(--color-border-subtle);padding:0.75rem 0.5rem;display:flex;flex-direction:column;gap:2px;}
+.sidebar--collapsed .sidebar__bottom{align-items:center;padding:0.75rem 0;}
+.sidebar--collapsed .sidebar__collapse-label{display:none;}
+.sidebar__bottom-btn{display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0.75rem;color:var(--gray-400);font-size:13px;background:none;border:none;border-radius:var(--radius-lg);cursor:pointer;width:100%;transition:color .15s,background-color .15s;}
+.sidebar__bottom-btn:hover{color:var(--gray-600);background:var(--gray-50);}
+.sidebar--collapsed .sidebar__bottom-btn{justify-content:center;}
+.sidebar__collapse-btn{display:none;}
+@media (min-width:1025px){.sidebar__collapse-btn{display:flex;}}
+.sidebar__collapse-icon{transition:transform .2s;display:flex;}
+.sidebar--collapsed .sidebar__collapse-icon{transform:rotate(180deg);}
+
+/* ===== Main / Topbar ===== */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
+
+.topbar{height:var(--header-h);border-bottom:1px solid var(--color-border-subtle);background:#fff;display:flex;align-items:center;gap:1rem;padding:0 1.25rem;flex-shrink:0;}
+.topbar__hamburger{display:flex;color:var(--gray-400);background:none;border:none;cursor:pointer;padding:0;}
+.topbar__hamburger:hover{color:var(--gray-600);}
+@media (min-width:1025px){.topbar__hamburger{display:none;}}
+.topbar__breadcrumb{display:flex;align-items:center;gap:0.5rem;font-size:13px;color:var(--gray-400);white-space:nowrap;overflow:hidden;}
+.topbar__breadcrumb-sep{color:var(--gray-200);}
+.topbar__breadcrumb-current{color:var(--gray-700);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.topbar__spacer{flex:1;}
+.topbar__search{position:relative;display:block;}
+@media (max-width:767px){.topbar__search{display:none;}}
+.topbar__search-icon{position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--gray-400);pointer-events:none;display:flex;}
+.topbar__search-input{background:var(--gray-50);border:1px solid var(--color-border);border-radius:var(--radius-xl);padding:0.375rem 0.75rem 0.375rem 2rem;font-size:13px;width:10rem;outline:none;transition:border-color .15s;color:var(--gray-800);}
+.topbar__search-input::placeholder{color:var(--gray-300);}
+.topbar__search-input:focus{border-color:var(--gray-400);}
+.topbar__bell{position:relative;padding:0.5rem;border-radius:var(--radius-lg);color:var(--gray-400);background:none;border:none;cursor:pointer;display:flex;}
+.topbar__bell:hover{color:var(--gray-600);background:var(--gray-50);}
+.topbar__bell-dot{position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:var(--radius-full);background:var(--red-400);}
+.topbar__avatar{width:1.75rem;height:1.75rem;border-radius:var(--radius-full);background:var(--gray-100);border:1px solid var(--color-border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background-color .15s;}
+.topbar__avatar:hover{background:var(--gray-200);}
+.topbar__avatar span{font-size:11px;font-weight:600;color:var(--gray-600);}
+
+.content{flex:1;overflow-y:auto;padding:1.25rem;}
+@media (min-width:1025px){.content{padding:1.75rem;}}
+
+/* ===== Page common ===== */
+.page{display:flex;flex-direction:column;gap:1.5rem;}
+.page[hidden]{display:none;}
+.page__header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+.page__title{font-size:1.5rem;font-weight:600;color:var(--gray-900);letter-spacing:-0.01em;margin:0;}
+.page__subtitle{font-size:0.875rem;color:var(--gray-400);margin:0.25rem 0 0;}
+
+.btn-primary{display:inline-flex;align-items:center;gap:0.5rem;background:var(--color-primary);color:#fff;font-weight:500;font-size:0.875rem;border-radius:var(--radius-xl);padding:0.625rem 1rem;border:none;cursor:pointer;transition:background-color .15s;white-space:nowrap;}
+.btn-primary:hover{background:var(--color-primary-hover);}
+.btn-secondary{padding:0.625rem 1rem;border:1px solid var(--color-border);color:var(--gray-600);font-size:0.875rem;border-radius:var(--radius-xl);background:#fff;cursor:pointer;transition:background-color .15s;}
+.btn-secondary:hover{background:var(--gray-50);}
+
+.icon{display:block;}
+
+/* ===== Badges ===== */
+.badge{display:inline-flex;align-items:center;gap:0.375rem;border-radius:var(--radius-full);font-weight:500;white-space:nowrap;}
+.badge--sm{padding:0.125rem 0.5rem;font-size:11px;}
+.badge--md{padding:0.25rem 0.625rem;font-size:12px;}
+.badge__dot{width:6px;height:6px;border-radius:var(--radius-full);flex-shrink:0;}
+
+.badge--blue{background:var(--blue-50);color:var(--blue-600);border:1px solid var(--blue-100);}
+.badge__dot--blue{background:var(--blue-400);}
+.badge--amber{background:var(--amber-50);color:var(--amber-600);border:1px solid var(--amber-100);}
+.badge__dot--amber{background:var(--amber-400);}
+.badge--gray{background:var(--gray-100);color:var(--gray-500);border:1px solid var(--gray-200);}
+.badge__dot--gray{background:var(--gray-400);}
+.badge--green{background:var(--green-50);color:var(--green-600);border:1px solid var(--green-100);}
+.badge__dot--green{background:var(--green-400);}
+.badge--red{background:var(--red-50);color:var(--red-600);border:1px solid var(--red-100);}
+.badge__dot--red{background:var(--red-400);}
+.badge--purple{background:var(--purple-50);color:var(--purple-600);border:1px solid var(--purple-100);}
+.badge__dot--purple{background:var(--purple-400);}
+.badge--orange{background:var(--orange-50);color:var(--orange-600);border:1px solid var(--orange-100);}
+.badge__dot--orange{background:var(--orange-400);}
+
+/* ===== Filters row ===== */
+.filters-row{display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;}
+.search-box{position:relative;}
+.search-box__icon{position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--gray-400);display:flex;}
+.search-box__input{background:#fff;border:1px solid var(--color-border);border-radius:var(--radius-xl);padding:0.5rem 0.75rem 0.5rem 2rem;font-size:0.875rem;color:var(--gray-700);outline:none;transition:border-color .15s;}
+.search-box__input::placeholder{color:var(--gray-300);}
+.search-box__input:focus{border-color:var(--gray-400);}
+.filters-divider{width:1px;height:1rem;background:var(--color-border);}
+.filter-chip{font-size:12px;padding:0.375rem 0.75rem;border-radius:var(--radius-lg);border:1px solid var(--color-border);color:var(--gray-500);background:#fff;cursor:pointer;text-transform:capitalize;transition:border-color .15s,color .15s,background-color .15s;white-space:nowrap;}
+.filter-chip:hover{border-color:var(--gray-300);color:var(--gray-700);}
+.filter-chip--active{background:var(--color-primary);border-color:var(--color-primary);color:#fff;}
+.filter-chip--active:hover{color:#fff;border-color:var(--color-primary);}
+.cat-scroll{display:flex;gap:0.375rem;overflow-x:auto;padding-bottom:2px;}
+
+/* ===== Tables ===== */
+.table-wrap{background:#fff;border:1px solid var(--color-border-subtle);border-radius:var(--radius-2xl);overflow:hidden;}
+.table-scroll{overflow-x:auto;}
+.table__head{display:grid;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--gray-400);font-weight:500;padding:0.75rem 1.5rem;border-bottom:1px solid var(--gray-50);min-width:640px;}
+.table__row{display:grid;padding:1rem 1.5rem;align-items:center;cursor:pointer;transition:background-color .15s;border-bottom:1px solid var(--gray-50);min-width:640px;}
+.table__row:last-child{border-bottom:none;}
+.table__row:hover{background:var(--gray-50);}
+.table__body{display:flex;flex-direction:column;}
+
+.wo-table__head,.wo-table__row{grid-template-columns:5.5rem minmax(0,1fr) minmax(0,1fr) 5rem 5.5rem 5.5rem 4.5rem 1.5rem;}
+.parts-table__head,.parts-table__row{grid-template-columns:5rem minmax(0,1fr) 8rem 6rem 5rem 6rem 6rem;}
+.po-table__head,.po-table__row{grid-template-columns:5rem minmax(0,1fr) minmax(0,1fr) 4rem 6rem 6rem 1.5rem;}
+.teams-table__head,.teams-table__row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 6rem 6rem;}
+
+.cell-dim{color:var(--gray-400);font-size:12px;}
+.cell-title{font-size:0.875rem;font-weight:500;color:var(--gray-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cell-sub{font-size:0.875rem;color:var(--gray-600);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cell-sub-dim{font-size:12px;color:var(--gray-400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cell-text{font-size:12px;color:var(--gray-500);}
+.text-right{text-align:right;}
+.text-center{text-align:center;}
+.chevron-cell{color:var(--gray-300);transition:color .15s;justify-self:end;display:flex;}
+.table__row:hover .chevron-cell{color:var(--gray-600);}
+
+/* ===== KPI cards (dashboard) ===== */
+.grid-kpi{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;}
+@media (min-width:1025px){.grid-kpi{grid-template-columns:repeat(3,1fr);}}
+.kpi-card{background:#fff;border:1px solid var(--color-border-subtle);border-radius:var(--radius-2xl);padding:1.25rem;transition:border-color .15s;}
+.kpi-card:hover{border-color:var(--color-border);}
+.kpi-card__top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+.kpi-card__label{font-size:11px;font-weight:500;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.05em;}
+.kpi-card__icon{padding:0.5rem;border-radius:var(--radius-xl);display:flex;}
+.kpi-card__value{font-size:1.875rem;font-weight:600;color:var(--gray-900);}
+.kpi-card__sub{font-size:12px;color:var(--gray-400);margin-top:0.25rem;}
+
+.live-pill{display:inline-flex;align-items:center;gap:0.5rem;font-size:12px;color:var(--green-600);background:var(--green-50);border:1px solid var(--green-100);padding:0.375rem 0.75rem;border-radius:var(--radius-full);flex-shrink:0;}
+.live-pill__dot{width:6px;height:6px;border-radius:var(--radius-full);background:var(--green-400);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+
+.dash-grid{display:grid;grid-template-columns:1fr;gap:1.25rem;}
+@media (min-width:1025px){.dash-grid{grid-template-columns:2fr 1fr;}}
+.dash-grid__side{display:flex;flex-direction:column;gap:1rem;}
+
+.panel{background:#fff;border:1px solid var(--color-border-subtle);border-radius:var(--radius-2xl);overflow:hidden;}
+.panel--flex{flex:1;}
+.panel__header{padding:1rem 1.5rem;border-bottom:1px solid var(--gray-50);display:flex;align-items:center;justify-content:space-between;gap:0.5rem;}
+.panel__header--sm{padding:1rem 1.25rem;}
+.panel__header-title{font-size:0.875rem;font-weight:600;color:var(--gray-900);}
+.panel__header-sub{font-size:12px;color:var(--gray-400);}
+
+.wo-mini-row{padding:0.875rem 1.5rem;display:flex;align-items:center;gap:1rem;cursor:pointer;transition:background-color .15s;border-bottom:1px solid var(--gray-50);}
+.wo-mini-row:last-child{border-bottom:none;}
+.wo-mini-row:hover{background:var(--gray-50);}
+.wo-mini-row__id{font-size:12px;color:var(--gray-400);width:4.5rem;flex-shrink:0;}
+.wo-mini-row__main{flex:1;min-width:0;}
+.wo-mini-row__title{font-size:0.875rem;font-weight:500;color:var(--gray-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wo-mini-row__meta{font-size:12px;color:var(--gray-400);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wo-mini-row__due{font-size:12px;color:var(--gray-400);flex-shrink:0;}
+
+.mini-row{padding:0.75rem 1.25rem;cursor:pointer;transition:background-color .15s;border-bottom:1px solid var(--gray-50);}
+.mini-row:last-child{border-bottom:none;}
+.mini-row:hover{background:var(--gray-50);}
+.mini-row__title{font-size:12px;font-weight:500;color:var(--gray-700);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mini-row__bottom{display:flex;align-items:center;justify-content:space-between;margin-top:0.25rem;gap:0.5rem;}
+.mini-row__sub{font-size:12px;color:var(--gray-400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+.asset-status-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem;}
+@media (min-width:640px){.asset-status-grid{grid-template-columns:repeat(4,1fr);}}
+.asset-status-item{display:flex;flex-direction:column;gap:0.5rem;}
+.asset-status-count{font-size:1.875rem;font-weight:600;color:var(--gray-900);}
+.asset-status-label{font-size:12px;color:var(--gray-400);}
+
+.section-card{background:#fff;border:1px solid var(--color-border-subtle);border-radius:var(--radius-2xl);padding:1.5rem;}
+.section-card__title{font-size:0.875rem;font-weight:600;color:var(--gray-900);margin:0 0 1.25rem;}
+
+/* ===== Stat cards ===== */
+.stat-row{display:grid;gap:1rem;}
+.stat-row--3{grid-template-columns:repeat(3,1fr);}
+.stat-row--4{grid-template-columns:repeat(4,1fr);}
+@media (max-width:640px){.stat-row--3{grid-template-columns:repeat(2,1fr);}.stat-row--4{grid-template-columns:repeat(2,1fr);}}
+@media (max-width:420px){.stat-row--3{grid-template-columns:1fr;}.stat-row--4{grid-template-columns:1fr;}}
+.stat-card{border-radius:var(--radius-2xl);padding:1.25rem;border:1px solid;}
+.stat-card__count{font-size:1.875rem;font-weight:600;}
+.stat-card__label{font-size:0.875rem;color:var(--gray-500);margin-top:0.25rem;}
+.stat-card--red{background:var(--red-50);border-color:var(--red-100);}
+.stat-card--red .stat-card__count{color:var(--red-600);}
+.stat-card--amber{background:var(--amber-50);border-color:var(--amber-100);}
+.stat-card--amber .stat-card__count{color:var(--amber-600);}
+.stat-card--blue{background:var(--blue-50);border-color:var(--blue-100);}
+.stat-card--blue .stat-card__count{color:var(--blue-600);}
+.stat-card--green{background:var(--green-50);border-color:var(--green-100);}
+.stat-card--green .stat-card__count{color:var(--green-600);}
+.stat-card--purple{background:var(--purple-50);border-color:var(--purple-100);}
+.stat-card--purple .stat-card__count{color:var(--purple-600);}
+
+/* ===== Card grid (PM / Assets / Meters / People) ===== */
+.cards-2col{display:grid;grid-template-columns:1fr;gap:1rem;}
+@media (min-width:1025px){.cards-2col{grid-template-columns:repeat(2,1fr);}}
+
+.pm-card{background:#fff;border:1px solid var(--color-border-subtle);border-radius:var(--radius-2xl);padding:1.25rem;cursor:pointer;transition:border-color .15s;}
+.pm-card:hover{border-color:var(--color-border);}
+.pm-card__id-row{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.375rem;}
+.pm-card__id{font-size:12px;color:var(--gray-400);}
+.pm-card__title{font-size:0.875rem;font-weight:600;color:var(--gray-800);line-height:1.375;}
+.pm-card__asset{font-size:12px;color:var(--gray-400);margin-top:2px;}
+.pm-card__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;padding-top:1rem;border-top:1px solid var(--gray-50);margin-top:1rem;}
+.pm-card__field-label{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--gray-400);margin-bottom:0.25rem;}
+.pm-card__field-value{font-size:0.875rem;color:var(--gray-700);}
+.pm-card__field-value--overdue{color:var(--red-600);font-weight:500;}
+.pm-card__icon-row{display:flex;align-items:center;gap:0.375rem;color:var(--gray-400);}
+.pm-card__footer{display:flex;justify-content:space-between;font-size:12px;color:var(--gray-400);margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--gray-50);}
+
+.asset-card{background:#fff;border:1px solid var(--color-border-subtle);border-radius:var(--radius-2xl);padding:1.25rem;cursor:pointer;transition:border-color .15s;}
+.asset-card:hover{border-color:var(--color-border);}
+.asset-card__top{display:flex;align-items:flex-start;justify-content:space-between;gap:0.75rem;margin-bottom:1rem;}
+.asset-card__id-row{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.375rem;flex-wrap:wrap;}
+.asset-card__id{font-size:12px;color:var(--gray-400);}
+.asset-card__name{font-size:0.875rem;font-weight:600;color:var(--gray-800);}
+.asset-card__location{font-size:12px;color:var(--gray-400);margin-top:2px;}
+.asset-card__chevron{color:var(--gray-300);flex-shrink:0;margin-top:0.25rem;transition:color .15s;display:flex;}
+.asset-card:hover .asset-card__chevron{color:var(--gray-600);}
+.asset-card__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem 0.75rem;border-top:1px solid var(--gray-50);padding-top:1rem;}
+.asset-card__field-label{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--gray-400);margin-bottom:2px;}
+.asset-card__field-value{font-size:12px;color:var(--gray-600);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+.meter-card{background:#fff;border:1px solid var(--color-border-subtle);border-radius:var(--radius-2xl);padding:1.5rem;transition:border-color .15s;display:flex;flex-direction:column;gap:1.25rem;}
+.meter-card:hover{border-color:var(--color-border);}
+.meter-card__top{display:flex;align-items:flex-start;justify-content:space-between;}
+.meter-card__id-row{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.375rem;}
+.meter-card__id{font-size:12px;color:var(--gray-400);}
+.meter-card__name{font-size:0.875rem;font-weight:600;color:var(--gray-800);}
+.meter-card__asset{font-size:12px;color:var(--gray-400);margin-top:2px;}
+.meter-card__icon{color:var(--gray-300);margin-top:0.25rem;display:flex;}
+.meter-card__reading-box{background:var(--gray-50);border-radius:var(--radius-xl);padding:1rem 1.25rem;}
+.meter-card__reading-label{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--gray-400);margin-bottom:0.25rem;}
+.meter-card__reading-value{display:flex;align-items:baseline;gap:0.5rem;}
+.meter-card__reading-num{font-size:1.5rem;font-weight:600;color:var(--gray-900);}
+.meter-card__reading-unit{font-size:0.875rem;color:var(--gray-400);}
+.meter-card__reading-rate{font-size:12px;color:var(--gray-400);margin-top:0.25rem;}
+.meter-card__threshold-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:0.5rem;}
+.meter-card__threshold-bar{height:6px;background:var(--gray-100);border-radius:var(--radius-full);overflow:hidden;}
+.meter-card__threshold-fill{height:100%;border-radius:var(--radius-full);transition:width .3s;}
+.meter-card__threshold-note{font-size:12px;color:var(--gray-400);margin-top:0.375rem;}
+.meter-card__add-btn{font-size:12px;color:var(--gray-500);border:1px solid var(--color-border);border-radius:var(--radius-xl);padding:0.5rem 1rem;background:#fff;cursor:pointer;align-self:flex-start;transition:color .15s,border-color .15s;}
+.meter-card__add-btn:hover{color:var(--gray-800);border-color:var(--gray-300);}
+.meter-card__add-form{display:flex;gap:0.5rem;}
+.meter-card__add-input{flex:1;min-width:0;background:var(--gray-50);border:1px solid var(--color-border);border-radius:var(--radius-xl);padding:0.5rem 0.75rem;font-size:0.875rem;color:var(--gray-800);outline:none;}
+.meter-card__add-input::placeholder{color:var(--gray-300);}
+.meter-card__add-input:focus{border-color:var(--gray-400);}
+.meter-card__save-btn{padding:0.5rem 0.75rem;background:var(--gray-900);color:#fff;font-size:12px;font-weight:500;border-radius:var(--radius-xl);border:none;cursor:pointer;}
+.meter-card__save-btn:hover{background:var(--gray-700);}
+.meter-card__cancel-btn{padding:0.5rem 0.75rem;border:1px solid var(--color-border);color:var(--gray-500);font-size:12px;border-radius:var(--radius-xl);background:#fff;cursor:pointer;}
+.meter-card__cancel-btn:hover{background:var(--gray-50);}
+
+/* ===== People & Teams ===== */
+.tabs{display:flex;gap:0.25rem;border-bottom:1px solid var(--color-border-subtle);}
+.tab-btn{display:flex;align-items:center;gap:0.5rem;padding:0.625rem 1rem;font-size:0.875rem;font-weight:500;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;color:var(--gray-400);cursor:pointer;margin-bottom:-1px;transition:color .15s,border-color .15s;}
+.tab-btn:hover{color:var(--gray-600);}
+.tab-btn--active{border-bottom-color:var(--color-primary);color:var(--color-primary);}
+
+.person-card{background:#fff;border:1px solid var(--color-border-subtle);border-radius:var(--radius-2xl);padding:1.25rem;cursor:pointer;transition:border-color .15s;}
+.person-card:hover{border-color:var(--color-border);}
+.person-card__top{display:flex;align-items:flex-start;gap:1rem;margin-bottom:1rem;}
+.person-card__avatar{width:2.5rem;height:2.5rem;border-radius:var(--radius-full);background:var(--gray-100);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.person-card__avatar span{font-size:0.875rem;font-weight:600;color:var(--gray-600);}
+.person-card__info{flex:1;min-width:0;}
+.person-card__name-row{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;}
+.person-card__name{font-size:0.875rem;font-weight:600;color:var(--gray-800);}
+.person-card__role{font-size:12px;color:var(--gray-400);margin-top:2px;}
+.person-card__grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;border-top:1px solid var(--gray-50);padding-top:1rem;}
+.person-card__field-label{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--gray-400);margin-bottom:0.25rem;}
+.person-card__email{font-size:12px;color:var(--gray-600);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.person-card__phone{font-size:12px;color:var(--gray-400);}
+.person-card__wo-count{font-size:1.5rem;font-weight:600;color:var(--gray-900);}
+.person-card__certs{margin-top:0.75rem;display:flex;flex-wrap:wrap;gap:0.375rem;}
+.cert-pill{font-size:11px;padding:0.125rem 0.5rem;background:var(--gray-100);color:var(--gray-600);border-radius:var(--radius-full);border:1px solid var(--color-border);}
+
+/* ===== Purchase Orders vendor spend ===== */
+.vendor-row{display:flex;align-items:center;gap:1rem;}
+.vendor-rank{font-size:12px;color:var(--gray-300);width:1rem;flex-shrink:0;}
+.vendor-name{font-size:0.875rem;color:var(--gray-600);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.vendor-bar{width:7rem;height:6px;background:var(--gray-100);border-radius:var(--radius-full);overflow:hidden;flex-shrink:0;}
+.vendor-bar__fill{height:100%;background:var(--gray-800);border-radius:var(--radius-full);}
+.vendor-total{font-size:0.875rem;font-weight:500;color:var(--gray-700);width:4rem;text-align:right;flex-shrink:0;}
+.vendor-list{display:flex;flex-direction:column;gap:0.75rem;}
+
+/* ===== Work Order Drawer ===== */
+.wo-drawer-overlay{position:fixed;inset:0;z-index:60;display:flex;}
+.wo-drawer-overlay[hidden]{display:none;}
+.wo-drawer-overlay__backdrop{flex:1;background:rgba(0,0,0,0.2);cursor:pointer;}
+.wo-drawer{width:480px;max-width:100%;background:#fff;border-left:1px solid var(--color-border-subtle);display:flex;flex-direction:column;box-shadow:-10px 0 40px rgba(0,0,0,0.12);overflow:hidden;}
+@media (max-width:640px){.wo-drawer{width:100%;}}
+
+.wo-drawer__header{padding:1.25rem 1.75rem;border-bottom:1px solid var(--color-border-subtle);display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;}
+.wo-drawer__id{font-size:12px;color:var(--gray-400);margin:0 0 0.25rem;}
+.wo-drawer__title{font-size:1rem;font-weight:600;color:var(--gray-900);line-height:1.375;margin:0;}
+.wo-drawer__close{padding:0.375rem;border-radius:var(--radius-lg);background:none;border:none;color:var(--gray-400);cursor:pointer;flex-shrink:0;display:flex;}
+.wo-drawer__close:hover{background:var(--gray-100);}
+.wo-drawer__body{flex:1;overflow-y:auto;padding:1.5rem 1.75rem;display:flex;flex-direction:column;gap:1.75rem;}
+.wo-drawer__badges{display:flex;gap:0.5rem;flex-wrap:wrap;}
+.wo-drawer__grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.25rem 2rem;}
+.wo-drawer__field-label{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--gray-400);font-weight:500;margin:0 0 0.25rem;}
+.wo-drawer__field-value{font-size:0.875rem;color:var(--gray-800);margin:0;}
+.wo-drawer__section-label{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--gray-400);font-weight:500;margin:0 0 0.5rem;}
+.wo-drawer__desc{font-size:0.875rem;color:var(--gray-600);line-height:1.625;margin:0;}
+.wo-drawer__parts{border:1px solid var(--color-border-subtle);border-radius:var(--radius-xl);}
+.wo-drawer__parts-row{padding:0.75rem 1rem;display:flex;justify-content:space-between;font-size:0.875rem;border-bottom:1px solid var(--gray-50);}
+.wo-drawer__parts-row:last-child{border-bottom:none;}
+.wo-drawer__parts-row span:first-child{color:var(--gray-600);}
+.wo-drawer__parts-row span:last-child{color:var(--gray-900);font-weight:500;}
+.wo-drawer__activity{display:flex;flex-direction:column;gap:1rem;}
+.wo-drawer__activity-item{display:flex;gap:1rem;font-size:0.875rem;}
+.wo-drawer__activity-time{color:var(--gray-400);flex-shrink:0;padding-top:1px;}
+.wo-drawer__activity-user{font-weight:500;color:var(--gray-900);}
+.wo-drawer__activity-note{color:var(--gray-400);}
+.wo-drawer__footer{padding:1.25rem 1.75rem;border-top:1px solid var(--color-border-subtle);display:flex;gap:0.75rem;}
+.wo-drawer__footer .btn-primary{flex:1;justify-content:center;}
+
+@media (max-width:480px){
+  .wo-drawer__grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="overlay" id="mobileOverlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar__logo">
+      <div class="sidebar__logo-badge"><span>CM</span></div>
+      <div class="sidebar__logo-text">
+        <div class="sidebar__logo-title">CriticalMaint</div>
+        <div class="sidebar__logo-sub">Plant A Facility</div>
+      </div>
+    </div>
+
+    <nav class="sidebar__nav" id="sidebarNav"></nav>
+
+    <div class="sidebar__bottom">
+      <button class="sidebar__bottom-btn" type="button" id="settingsBtn"></button>
+      <button class="sidebar__bottom-btn sidebar__collapse-btn" type="button" id="collapseBtn" aria-expanded="true"></button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <button class="topbar__hamburger" type="button" id="hamburgerBtn" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar"></button>
+
+      <div class="topbar__breadcrumb">
+        <span>Plant A</span>
+        <span class="topbar__breadcrumb-sep">/</span>
+        <span class="topbar__breadcrumb-current" id="breadcrumbCurrent">Overview</span>
+      </div>
+
+      <div class="topbar__spacer"></div>
+
+      <div class="topbar__search">
+        <span class="topbar__search-icon"></span>
+        <input class="topbar__search-input" type="text" placeholder="Search…" />
+      </div>
+
+      <button class="topbar__bell" type="button" aria-label="Notifications">
+        <span class="topbar__bell-dot"></span>
+      </button>
+
+      <div class="topbar__avatar"><span>AT</span></div>
+    </header>
+
+    <main class="content" id="content"></main>
+  </div>
+</div>
+
+<!-- Work Order detail drawer -->
+<div class="wo-drawer-overlay" id="woDrawerOverlay" hidden>
+  <div class="wo-drawer-overlay__backdrop" id="woDrawerBackdrop"></div>
+  <div class="wo-drawer" id="woDrawer"></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================= DATA ============================= */
+const workOrders = [
+  { id:'WO-2847', title:'Hydraulic press seal replacement', asset:'Hydraulic Press #3', priority:'critical', status:'in-progress', assignee:'Marcus Velez', due:'2026-08-12', created:'2026-08-09', category:'Corrective', est:'4h', cost:1240 },
+  { id:'WO-2846', title:'HVAC filter replacement — Building C', asset:'HVAC Unit C-02', priority:'high', status:'open', assignee:'Priya Sharma', due:'2026-08-13', created:'2026-08-10', category:'Preventive', est:'2h', cost:380 },
+  { id:'WO-2845', title:'Conveyor belt tension adjustment', asset:'Conveyor Line 7', priority:'medium', status:'open', assignee:'James Okafor', due:'2026-08-15', created:'2026-08-10', category:'Corrective', est:'3h', cost:560 },
+  { id:'WO-2844', title:'Generator load bank test', asset:'Generator G-01', priority:'high', status:'completed', assignee:'Sofia Lindqvist', due:'2026-08-10', created:'2026-08-07', category:'Inspection', est:'6h', cost:920 },
+  { id:'WO-2843', title:'Cooling tower inspection', asset:'Cooling Tower A', priority:'low', status:'completed', assignee:'Marcus Velez', due:'2026-08-08', created:'2026-08-05', category:'Inspection', est:'2h', cost:290 },
+  { id:'WO-2842', title:'Pump #4 bearing replacement', asset:'Centrifugal Pump #4', priority:'critical', status:'on-hold', assignee:'Unassigned', due:'2026-08-11', created:'2026-08-08', category:'Corrective', est:'8h', cost:2100 },
+  { id:'WO-2841', title:'Electrical panel thermography scan', asset:'Panel EP-14', priority:'medium', status:'in-progress', assignee:'James Okafor', due:'2026-08-14', created:'2026-08-09', category:'Inspection', est:'3h', cost:450 },
+  { id:'WO-2840', title:'Compressor oil change and filter', asset:'Air Compressor AC-02', priority:'medium', status:'open', assignee:'Priya Sharma', due:'2026-08-16', created:'2026-08-11', category:'Preventive', est:'1.5h', cost:220 },
+];
+
+const pmTasks = [
+  { id:'PM-0441', title:'Monthly lubrication — Conveyor Line 7', asset:'Conveyor Line 7', frequency:'Monthly', nextDue:'2026-08-15', lastDone:'2026-07-15', status:'due-soon', assignee:'James Okafor', est:'2h' },
+  { id:'PM-0440', title:'Quarterly hydraulic fluid analysis', asset:'Hydraulic Press #3', frequency:'Quarterly', nextDue:'2026-09-01', lastDone:'2026-06-01', status:'scheduled', assignee:'Marcus Velez', est:'1h' },
+  { id:'PM-0439', title:'Air filter replacement — Compressor AC-02', asset:'Air Compressor AC-02', frequency:'Monthly', nextDue:'2026-08-11', lastDone:'2026-07-11', status:'overdue', assignee:'Priya Sharma', est:'1h' },
+  { id:'PM-0438', title:'Annual boiler inspection', asset:'Boiler BL-01', frequency:'Annually', nextDue:'2026-10-15', lastDone:'2025-10-15', status:'scheduled', assignee:'Sofia Lindqvist', est:'8h' },
+  { id:'PM-0437', title:'Weekly pump vibration check', asset:'Centrifugal Pump #4', frequency:'Weekly', nextDue:'2026-08-12', lastDone:'2026-08-05', status:'due-soon', assignee:'Marcus Velez', est:'0.5h' },
+  { id:'PM-0436', title:'Semi-annual roof drainage inspection', asset:'Building A Roof', frequency:'Semi-Annual', nextDue:'2026-11-01', lastDone:'2026-05-01', status:'scheduled', assignee:'James Okafor', est:'3h' },
+];
+
+const meters = [
+  { id:'MTR-001', name:'Press #3 — Cycle Count', asset:'Hydraulic Press #3', unit:'cycles', lastReading:148320, readingDate:'2026-08-11', rate:'~840/day', threshold:200000, status:'normal' },
+  { id:'MTR-002', name:'Generator G-01 — Runtime', asset:'Generator G-01', unit:'hours', lastReading:4821, readingDate:'2026-08-11', rate:'~2.1/day', threshold:5000, status:'warning' },
+  { id:'MTR-003', name:'Conveyor 7 — Footage', asset:'Conveyor Line 7', unit:'ft', lastReading:2840091, readingDate:'2026-08-10', rate:'~18,400/day', threshold:null, status:'normal' },
+  { id:'MTR-004', name:'Boiler — Steam Production', asset:'Boiler BL-01', unit:'MMBtu', lastReading:9204, readingDate:'2026-08-11', rate:'~22/day', threshold:null, status:'normal' },
+  { id:'MTR-005', name:'Compressor AC-02 — Runtime', asset:'Air Compressor AC-02', unit:'hours', lastReading:12448, readingDate:'2026-08-09', rate:'~8/day', threshold:12500, status:'critical' },
+  { id:'MTR-006', name:'Pump #4 — Flow Volume', asset:'Centrifugal Pump #4', unit:'gal', lastReading:5820441, readingDate:'2026-08-11', rate:'~14,200/day', threshold:null, status:'normal' },
+];
+
+const assets = [
+  { id:'AST-0031', name:'Hydraulic Press #3', category:'Production Equipment', location:'Plant Floor — Zone A', status:'running', make:'Parker Hannifin', model:'PHF-2200', serial:'PHF22-09847', installed:'2019-03-14', warranty:'2024-03-14', criticality:'high' },
+  { id:'AST-0028', name:'Conveyor Line 7', category:'Material Handling', location:'Plant Floor — Zone B', status:'running', make:'Dorner Mfg.', model:'2200 Series', serial:'DRN-774921', installed:'2020-07-22', warranty:'2023-07-22', criticality:'high' },
+  { id:'AST-0017', name:'Generator G-01', category:'Utility', location:'Exterior — Pad 1', status:'standby', make:'Caterpillar', model:'XQ400', serial:'CAT-XQ400-3391', installed:'2017-11-01', warranty:'2022-11-01', criticality:'critical' },
+  { id:'AST-0022', name:'Boiler BL-01', category:'Utility', location:'Mechanical Room', status:'running', make:'Cleaver-Brooks', model:'CB-LE-600', serial:'CBLE-600-1147', installed:'2018-05-09', warranty:'2023-05-09', criticality:'critical' },
+  { id:'AST-0039', name:'Air Compressor AC-02', category:'Utility', location:'Compressor Room', status:'maintenance', make:'Atlas Copco', model:'GA 37 VSD+', serial:'AC-GA37-88201', installed:'2021-02-18', warranty:'2026-02-18', criticality:'medium' },
+  { id:'AST-0044', name:'Centrifugal Pump #4', category:'Process Equipment', location:'Pump Room B', status:'offline', make:'Grundfos', model:'NK 100-250', serial:'GF-NK100-55092', installed:'2020-09-30', warranty:'2025-09-30', criticality:'high' },
+  { id:'AST-0051', name:'HVAC Unit C-02', category:'HVAC', location:'Rooftop — Building C', status:'running', make:'Carrier', model:'50XCQ-10', serial:'CRR-50XCQ-6647', installed:'2022-01-10', warranty:'2027-01-10', criticality:'medium' },
+];
+
+const people = [
+  { id:'EMP-014', name:'Marcus Velez', role:'Senior Technician', team:'Mechanical', email:'mvelez@facility.co', phone:'+1 555-0142', certifications:['HVAC-R','Millwright L3'], activeWO:3, status:'on-site' },
+  { id:'EMP-021', name:'Priya Sharma', role:'Maintenance Technician', team:'Electrical', email:'psharma@facility.co', phone:'+1 555-0213', certifications:['NFPA 70E','PLC Programming'], activeWO:2, status:'on-site' },
+  { id:'EMP-009', name:'James Okafor', role:'Lead Technician', team:'Mechanical', email:'jokafor@facility.co', phone:'+1 555-0092', certifications:['Millwright L4','Rigging'], activeWO:2, status:'on-site' },
+  { id:'EMP-033', name:'Sofia Lindqvist', role:'Maintenance Engineer', team:'Engineering', email:'slindqvist@facility.co', phone:'+1 555-0334', certifications:['PE License','Six Sigma BB'], activeWO:1, status:'remote' },
+  { id:'EMP-042', name:'Devon Marsh', role:'Maintenance Technician', team:'HVAC', email:'dmarsh@facility.co', phone:'+1 555-0421', certifications:['EPA 608','HVAC-R'], activeWO:0, status:'off-shift' },
+  { id:'EMP-055', name:'Angela Torres', role:'Maintenance Planner', team:'Planning', email:'atorres@facility.co', phone:'+1 555-0551', certifications:['CMRP','APM'], activeWO:0, status:'on-site' },
+];
+
+const teams = [
+  { id:'TEAM-01', name:'Mechanical', lead:'James Okafor', members:8, activeWO:12 },
+  { id:'TEAM-02', name:'Electrical', lead:'Priya Sharma', members:5, activeWO:7 },
+  { id:'TEAM-03', name:'HVAC', lead:'Devon Marsh', members:4, activeWO:4 },
+  { id:'TEAM-04', name:'Engineering', lead:'Sofia Lindqvist', members:3, activeWO:2 },
+  { id:'TEAM-05', name:'Planning', lead:'Angela Torres', members:2, activeWO:0 },
+];
+
+const parts = [
+  { id:'PRT-8841', name:'Hydraulic Seal Kit — Parker 2200', category:'Seals & Gaskets', partNo:'PKR-SK-2200', qty:4, minQty:2, unitCost:148.00, location:'Bin A-14', lastUsed:'2026-08-09', status:'in-stock' },
+  { id:'PRT-8742', name:'HVAC Filter 24x24x2 MERV-13', category:'Filters', partNo:'FLT-2424-M13', qty:18, minQty:10, unitCost:22.50, location:'Shelf B-03', lastUsed:'2026-08-06', status:'in-stock' },
+  { id:'PRT-8639', name:'SKF Bearing 6205-2RS', category:'Bearings', partNo:'SKF-6205-2RS', qty:1, minQty:4, unitCost:9.80, location:'Bin C-07', lastUsed:'2026-07-28', status:'low-stock' },
+  { id:'PRT-8590', name:'Atlas Copco Air Filter GA37', category:'Filters', partNo:'AC-1621-0710-10', qty:0, minQty:2, unitCost:74.00, location:'Shelf B-08', lastUsed:'2026-07-11', status:'out-of-stock' },
+  { id:'PRT-8521', name:'Grundfos Mechanical Seal NK100', category:'Seals & Gaskets', partNo:'GF-97775965', qty:2, minQty:1, unitCost:312.00, location:'Bin A-22', lastUsed:'2026-06-14', status:'in-stock' },
+  { id:'PRT-8480', name:'Conveyor V-Belt B84', category:'Drive Components', partNo:'VBT-B84', qty:6, minQty:4, unitCost:18.40, location:'Bin D-11', lastUsed:'2026-08-01', status:'in-stock' },
+  { id:'PRT-8412', name:'Synthetic Grease — Mobilux EP2 (35 lb)', category:'Lubricants', partNo:'MOB-EP2-35LB', qty:3, minQty:2, unitCost:89.00, location:'Chem Storage 1', lastUsed:'2026-08-11', status:'in-stock' },
+  { id:'PRT-8390', name:'3/4" CPVC Ball Valve', category:'Valves', partNo:'CPVC-BV-075', qty:0, minQty:3, unitCost:14.20, location:'Shelf C-12', lastUsed:'2026-05-22', status:'out-of-stock' },
+];
+
+const purchaseOrders = [
+  { id:'PO-1084', vendor:'Applied Industrial Technologies', items:3, total:847.40, status:'received', ordered:'2026-08-01', received:'2026-08-07', requestedBy:'Marcus Velez' },
+  { id:'PO-1083', vendor:'W.W. Grainger', items:8, total:1420.00, status:'partial', ordered:'2026-08-05', received:null, requestedBy:'Priya Sharma' },
+  { id:'PO-1082', vendor:'Atlas Copco NA', items:2, total:294.50, status:'ordered', ordered:'2026-08-09', received:null, requestedBy:'Angela Torres' },
+  { id:'PO-1081', vendor:'Motion Industries', items:5, total:2180.00, status:'received', ordered:'2026-07-28', received:'2026-08-04', requestedBy:'James Okafor' },
+  { id:'PO-1080', vendor:'Fastenal', items:12, total:388.20, status:'received', ordered:'2026-07-25', received:'2026-07-29', requestedBy:'Devon Marsh' },
+  { id:'PO-1079', vendor:'Grundfos Pumps', items:1, total:624.00, status:'pending-approval', ordered:'2026-08-11', received:null, requestedBy:'James Okafor' },
+];
+
+/* ============================= ICONS ============================= */
+const ICONS = {
+  layoutDashboard:'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+  clipboardList:'<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>',
+  calendarCheck:'<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/>',
+  gauge:'<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
+  cpu:'<rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  package:'<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73Z"/><path d="M12 22V12"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="m7.5 4.27 9 5.15"/>',
+  shoppingBag:'<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',
+  bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  settings:'<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+  chevronLeft:'<path d="m15 18-6-6 6-6"/>',
+  chevronRight:'<path d="m9 18 6-6-6-6"/>',
+  search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  menu:'<line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>',
+  alertTriangle:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  checkCircle2:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  wrench:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76Z"/>',
+  zap:'<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+  x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  activity:'<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+  userPlus:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
+  user:'<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+};
+function icon(name, size, extraClass){
+  size = size || 16;
+  extraClass = extraClass || '';
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon '+extraClass+'">'+(ICONS[name]||'')+'</svg>';
+}
+function coloredIcon(name, size, color){
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon" style="color:'+color+'">'+(ICONS[name]||'')+'</svg>';
+}
+
+/* ============================= BADGES ============================= */
+const BADGE_CONFIG = {
+  'open':             { label:'Open',             cls:'blue' },
+  'in-progress':      { label:'In Progress',      cls:'amber' },
+  'on-hold':          { label:'On Hold',          cls:'gray' },
+  'completed':        { label:'Completed',        cls:'green' },
+  'overdue':          { label:'Overdue',          cls:'red' },
+  'due-soon':         { label:'Due Soon',         cls:'amber' },
+  'scheduled':        { label:'Scheduled',        cls:'blue' },
+  'normal':           { label:'Normal',           cls:'green' },
+  'warning':          { label:'Warning',          cls:'amber' },
+  'critical':         { label:'Critical',         cls:'red' },
+  'running':          { label:'Running',          cls:'green' },
+  'standby':          { label:'Standby',          cls:'gray' },
+  'maintenance':      { label:'Maintenance',      cls:'amber' },
+  'offline':          { label:'Offline',          cls:'red' },
+  'in-stock':         { label:'In Stock',         cls:'green' },
+  'low-stock':        { label:'Low Stock',        cls:'amber' },
+  'out-of-stock':     { label:'Out of Stock',     cls:'red' },
+  'received':         { label:'Received',         cls:'green' },
+  'partial':          { label:'Partial',          cls:'amber' },
+  'ordered':          { label:'Ordered',          cls:'blue' },
+  'pending-approval': { label:'Pending Approval', cls:'purple' },
+  'on-site':          { label:'On Site',          cls:'green' },
+  'remote':           { label:'Remote',           cls:'blue' },
+  'off-shift':        { label:'Off Shift',        cls:'gray' },
+  'high':             { label:'High',             cls:'orange' },
+  'medium':           { label:'Medium',           cls:'amber' },
+  'low':              { label:'Low',              cls:'gray' },
+};
+function badge(status, size){
+  size = size || 'sm';
+  const c = BADGE_CONFIG[status] || { label:status, cls:'gray' };
+  return '<span class="badge badge--'+size+' badge--'+c.cls+'"><span class="badge__dot badge__dot--'+c.cls+'"></span>'+esc(c.label)+'</span>';
+}
+
+/* ============================= HELPERS ============================= */
+function esc(s){
+  return String(s).replace(/[&<>"']/g, function(ch){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch];
+  });
+}
+function fmtInt(n){ return Number(n).toLocaleString(); }
+function fmtMoney(n){ return '$' + Number(n).toLocaleString(); }
+function fmtMoney2(n){ return '$' + Number(n).toFixed(2); }
+function mmdd(dateStr){ return dateStr.slice(5); }
+function yyyymm(dateStr){ return dateStr.slice(0,7); }
+
+/* ============================= NAV ============================= */
+const NAV = [
+  { id:'dashboard',       label:'Overview',           icon:'layoutDashboard' },
+  { id:'work-orders',     label:'Work Orders',        icon:'clipboardList', badge:12 },
+  { id:'pm',              label:'Preventive Maint.',  icon:'calendarCheck', badge:3 },
+  { id:'meters',          label:'Meters',             icon:'gauge' },
+  { id:'assets',          label:'Assets',             icon:'cpu' },
+  { id:'people',          label:'People & Teams',     icon:'users' },
+  { id:'parts',           label:'Parts & Inventory',  icon:'package', badge:2 },
+  { id:'purchase-orders', label:'Purchase Orders',    icon:'shoppingBag' },
+];
+
+/* ============================= STATE ============================= */
+const state = {
+  page: 'dashboard',
+  collapsed: false,
+  mobileOpen: false,
+  wo: { priority:'all', status:'all', search:'' },
+  pm: { freq:'All', search:'' },
+  assets: { cat:'All', crit:'all', search:'' },
+  parts: { cat:'All', search:'' },
+  po: { status:'all' },
+  people: { tab:'people' },
+};
+
+/* ============================= SIDEBAR ============================= */
+const sidebar = document.getElementById('sidebar');
+const sidebarNav = document.getElementById('sidebarNav');
+const mobileOverlay = document.getElementById('mobileOverlay');
+const hamburgerBtn = document.getElementById('hamburgerBtn');
+const collapseBtn = document.getElementById('collapseBtn');
+const settingsBtn = document.getElementById('settingsBtn');
+const breadcrumbCurrent = document.getElementById('breadcrumbCurrent');
+
+hamburgerBtn.innerHTML = icon('menu', 18);
+collapseBtn.innerHTML = '<span class="sidebar__collapse-icon">'+icon('chevronLeft',14)+'</span><span class="sidebar__collapse-label">Collapse</span>';
+settingsBtn.innerHTML = icon('settings',14)+'<span class="sidebar__collapse-label">Settings</span>';
+
+function renderSidebarNav(){
+  sidebarNav.innerHTML = NAV.map(function(item){
+    const active = item.id === state.page;
+    const hasBadge = !!item.badge;
+    return '<button type="button" class="sidebar__nav-item'+(active?' sidebar__nav-item--active':'')+(hasBadge?' sidebar__nav-item--has-badge':'')+'" data-page="'+item.id+'" title="'+esc(item.label)+'">'
+      + '<span class="sidebar__nav-icon">'+icon(item.icon,15)+'</span>'
+      + '<span class="sidebar__nav-label">'+esc(item.label)+'</span>'
+      + (hasBadge ? '<span class="sidebar__nav-badge">'+item.badge+'</span>' : '')
+      + '<span class="sidebar__nav-dot"></span>'
+      + '</button>';
+  }).join('');
+}
+renderSidebarNav();
+
+sidebarNav.addEventListener('click', function(e){
+  const btn = e.target.closest('.sidebar__nav-item');
+  if(!btn) return;
+  setPage(btn.getAttribute('data-page'));
+  closeMobileSidebar();
+});
+
+function setPage(id){
+  if(state.page === id) return;
+  state.page = id;
+  renderSidebarNav();
+  document.querySelectorAll('.page').forEach(function(p){ p.hidden = (p.id !== 'page-'+id); });
+  const navItem = NAV.find(function(n){ return n.id === id; });
+  breadcrumbCurrent.textContent = navItem ? navItem.label : '';
+  document.getElementById('content').scrollTop = 0;
+}
+
+function openMobileSidebar(){
+  state.mobileOpen = true;
+  sidebar.classList.add('sidebar--open');
+  mobileOverlay.classList.add('overlay--visible');
+  hamburgerBtn.setAttribute('aria-expanded','true');
+}
+function closeMobileSidebar(){
+  state.mobileOpen = false;
+  sidebar.classList.remove('sidebar--open');
+  mobileOverlay.classList.remove('overlay--visible');
+  hamburgerBtn.setAttribute('aria-expanded','false');
+}
+hamburgerBtn.addEventListener('click', function(){
+  state.mobileOpen ? closeMobileSidebar() : openMobileSidebar();
+});
+mobileOverlay.addEventListener('click', closeMobileSidebar);
+
+collapseBtn.addEventListener('click', function(){
+  state.collapsed = !state.collapsed;
+  sidebar.classList.toggle('sidebar--collapsed', state.collapsed);
+  collapseBtn.setAttribute('aria-expanded', String(!state.collapsed));
+});
+
+/* topbar search icon */
+document.querySelector('.topbar__search-icon').innerHTML = icon('search',13);
+/* topbar bell icon */
+document.querySelector('.topbar__bell').innerHTML = icon('bell',15) + '<span class="topbar__bell-dot"></span>';
+/* search box icons filled per-page below */
+
+/* ============================= PAGE: DASHBOARD ============================= */
+const KPIS = [
+  { label:'Open Work Orders',        value:'12',   sub:'+2 today',            icon:'wrench',       color:'#2563EB' },
+  { label:'Overdue PM Tasks',        value:'3',    sub:'1 critical',          icon:'alertTriangle', color:'#EF4444' },
+  { label:'Assets Online',           value:'84%',  sub:'37 of 44',            icon:'zap',           color:'#16A34A' },
+  { label:'Parts Low / Out',         value:'5',    sub:'2 out of stock',      icon:'package',       color:'#D97706' },
+  { label:'Completed This Week',     value:'18',   sub:'+4 vs last week',     icon:'checkCircle2',  color:'#16A34A' },
+  { label:'Avg Resolution Time',     value:'4.2h', sub:'−0.8h vs target',     icon:'clock',          color:'#7C3AED' },
+];
+
+function renderDashboard(){
+  const criticalWOs = workOrders.filter(function(w){ return w.priority==='critical' || w.status==='in-progress'; }).slice(0,4);
+  const overdueItems = pmTasks.filter(function(p){ return p.status==='overdue' || p.status==='due-soon'; });
+  const lowParts = parts.filter(function(p){ return p.status==='low-stock' || p.status==='out-of-stock'; });
+
+  const kpiHtml = KPIS.map(function(k){
+    return '<div class="kpi-card">'
+      + '<div class="kpi-card__top">'
+      + '<span class="kpi-card__label">'+esc(k.label)+'</span>'
+      + '<div class="kpi-card__icon" style="background:'+k.color+'12">'+coloredIcon(k.icon,14,k.color)+'</div>'
+      + '</div>'
+      + '<div class="kpi-card__value">'+esc(k.value)+'</div>'
+      + '<div class="kpi-card__sub">'+esc(k.sub)+'</div>'
+      + '</div>';
+  }).join('');
+
+  const woHtml = criticalWOs.map(function(wo){
+    return '<div class="wo-mini-row" data-wo-id="'+wo.id+'">'
+      + '<span class="wo-mini-row__id">'+wo.id+'</span>'
+      + '<div class="wo-mini-row__main">'
+      + '<div class="wo-mini-row__title">'+esc(wo.title)+'</div>'
+      + '<div class="wo-mini-row__meta">'+esc(wo.asset)+' · '+esc(wo.assignee)+'</div>'
+      + '</div>'
+      + badge(wo.priority) + badge(wo.status)
+      + '<span class="wo-mini-row__due">Due '+mmdd(wo.due)+'</span>'
+      + '</div>';
+  }).join('');
+
+  const pmHtml = overdueItems.map(function(pm){
+    return '<div class="mini-row">'
+      + '<div class="mini-row__title">'+esc(pm.asset)+'</div>'
+      + '<div class="mini-row__bottom">'
+      + '<span class="mini-row__sub">'+esc(pm.title.slice(0,26))+'…</span>'
+      + badge(pm.status)
+      + '</div></div>';
+  }).join('');
+
+  const partsHtml = lowParts.map(function(p){
+    return '<div class="mini-row">'
+      + '<div class="mini-row__title">'+esc(p.name.slice(0,30))+'…</div>'
+      + '<div class="mini-row__bottom">'
+      + '<span class="mini-row__sub">Qty '+p.qty+' / min '+p.minQty+'</span>'
+      + badge(p.status)
+      + '</div></div>';
+  }).join('');
+
+  const statuses = ['running','standby','maintenance','offline'];
+  const assetStatusHtml = statuses.map(function(s){
+    const count = assets.filter(function(a){ return a.status===s; }).length;
+    return '<div class="asset-status-item">'
+      + badge(s,'md')
+      + '<span class="asset-status-count">'+count+'</span>'
+      + '<span class="asset-status-label">of '+assets.length+' assets</span>'
+      + '</div>';
+  }).join('');
+
+  return '<div class="page__header">'
+    + '<div><h1 class="page__title">Overview</h1><p class="page__subtitle">Monday, 11 August 2026 · Plant A Facility</p></div>'
+    + '<span class="live-pill"><span class="live-pill__dot"></span>Live</span>'
+    + '</div>'
+    + '<div class="grid-kpi">'+kpiHtml+'</div>'
+    + '<div class="dash-grid">'
+    +   '<div class="panel">'
+    +     '<div class="panel__header"><span class="panel__header-title">Active Work Orders</span><span class="panel__header-sub">priority + in progress</span></div>'
+    +     '<div>'+woHtml+'</div>'
+    +   '</div>'
+    +   '<div class="dash-grid__side">'
+    +     '<div class="panel panel--flex"><div class="panel__header panel__header--sm"><span class="panel__header-title">PM Alerts</span></div><div>'+pmHtml+'</div></div>'
+    +     '<div class="panel panel--flex"><div class="panel__header panel__header--sm"><span class="panel__header-title">Parts Alerts</span></div><div>'+partsHtml+'</div></div>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="section-card">'
+    +   '<div class="section-card__title">Asset Status</div>'
+    +   '<div class="asset-status-grid">'+assetStatusHtml+'</div>'
+    + '</div>';
+}
+
+/* ============================= PAGE: WORK ORDERS ============================= */
+const WO_PRIORITIES = ['all','critical','high','medium','low'];
+const WO_STATUSES = ['all','open','in-progress','on-hold','completed'];
+
+function renderWorkOrdersShell(){
+  const priorityChips = WO_PRIORITIES.map(function(p){
+    return '<button type="button" class="filter-chip'+(state.wo.priority===p?' filter-chip--active':'')+'" data-action="wo-priority" data-value="'+p+'">'+p+'</button>';
+  }).join('');
+  const statusChips = WO_STATUSES.map(function(s){
+    return '<button type="button" class="filter-chip'+(state.wo.status===s?' filter-chip--active':'')+'" data-action="wo-status" data-value="'+s+'">'+s+'</button>';
+  }).join('');
+
+  return '<div class="page__header">'
+    + '<div><h1 class="page__title">Work Orders</h1><p class="page__subtitle" id="woCount"></p></div>'
+    + '<button type="button" class="btn-primary">'+icon('plus',14)+' New Work Order</button>'
+    + '</div>'
+    + '<div class="filters-row">'
+    +   '<div class="search-box"><span class="search-box__icon">'+icon('search',13)+'</span><input type="text" class="search-box__input" id="woSearch" placeholder="Search…" style="width:12rem" /></div>'
+    +   '<div class="filters-divider"></div>'
+    +   '<div class="filters-row" id="woPriorityChips">'+priorityChips+'</div>'
+    +   '<div class="filters-divider"></div>'
+    +   '<div class="filters-row" id="woStatusChips">'+statusChips+'</div>'
+    + '</div>'
+    + '<div class="table-wrap"><div class="table-scroll">'
+    +   '<div class="table__head wo-table__head"><span>WO ID</span><span>Title</span><span>Asset / Assignee</span><span>Category</span><span>Priority</span><span>Status</span><span>Due</span><span></span></div>'
+    +   '<div class="table__body" id="woTableBody"></div>'
+    + '</div></div>';
+}
+
+function filteredWorkOrders(){
+  const f = state.wo;
+  const search = f.search.toLowerCase();
+  return workOrders.filter(function(wo){
+    return (f.priority==='all' || wo.priority===f.priority)
+      && (f.status==='all' || wo.status===f.status)
+      && (search==='' || wo.title.toLowerCase().indexOf(search)>-1 || wo.id.indexOf(f.search)>-1);
+  });
+}
+
+function updateWorkOrdersList(){
+  const filtered = filteredWorkOrders();
+  document.getElementById('woCount').textContent = filtered.length + ' records';
+  document.getElementById('woTableBody').innerHTML = filtered.map(function(wo){
+    return '<div class="table__row wo-table__row" data-wo-id="'+wo.id+'">'
+      + '<span class="cell-dim">'+wo.id+'</span>'
+      + '<div class="cell-title">'+esc(wo.title)+'</div>'
+      + '<div><div class="cell-sub">'+esc(wo.asset)+'</div><div class="cell-sub-dim">'+esc(wo.assignee)+'</div></div>'
+      + '<span class="cell-text">'+esc(wo.category)+'</span>'
+      + badge(wo.priority)
+      + badge(wo.status)
+      + '<span class="cell-dim">'+mmdd(wo.due)+'</span>'
+      + '<span class="chevron-cell">'+icon('chevronRight',14)+'</span>'
+      + '</div>';
+  }).join('');
+}
+
+/* ============================= PAGE: PREVENTIVE MAINTENANCE ============================= */
+const PM_FREQS = ['All','Weekly','Monthly','Quarterly','Semi-Annual','Annually'];
+
+function renderPMShell(){
+  const stats = [
+    { label:'Overdue', count: pmTasks.filter(function(p){return p.status==='overdue';}).length, cls:'red' },
+    { label:'Due This Week', count: pmTasks.filter(function(p){return p.status==='due-soon';}).length, cls:'amber' },
+    { label:'Scheduled', count: pmTasks.filter(function(p){return p.status==='scheduled';}).length, cls:'blue' },
+  ];
+  const statsHtml = stats.map(function(s){
+    return '<div class="stat-card stat-card--'+s.cls+'"><div class="stat-card__count">'+s.count+'</div><div class="stat-card__label">'+s.label+'</div></div>';
+  }).join('');
+
+  const freqChips = PM_FREQS.map(function(f){
+    return '<button type="button" class="filter-chip'+(state.pm.freq===f?' filter-chip--active':'')+'" data-action="pm-freq" data-value="'+f+'" style="text-transform:none">'+f+'</button>';
+  }).join('');
+
+  return '<div class="page__header">'
+    + '<div><h1 class="page__title">Preventive Maintenance</h1><p class="page__subtitle" id="pmCount"></p></div>'
+    + '<button type="button" class="btn-primary">'+icon('plus',14)+' New PM Task</button>'
+    + '</div>'
+    + '<div class="stat-row stat-row--3">'+statsHtml+'</div>'
+    + '<div class="filters-row">'
+    +   '<div class="search-box"><span class="search-box__icon">'+icon('search',13)+'</span><input type="text" class="search-box__input" id="pmSearch" placeholder="Search tasks or assets…" style="width:13rem" /></div>'
+    +   '<div class="filters-row" id="pmFreqChips">'+freqChips+'</div>'
+    + '</div>'
+    + '<div class="cards-2col" id="pmCards"></div>';
+}
+
+function filteredPM(){
+  const f = state.pm;
+  const search = f.search.toLowerCase();
+  return pmTasks.filter(function(p){
+    return (f.freq==='All' || p.frequency===f.freq)
+      && (search==='' || p.title.toLowerCase().indexOf(search)>-1 || p.asset.toLowerCase().indexOf(search)>-1);
+  });
+}
+
+function updatePMList(){
+  const filtered = filteredPM();
+  document.getElementById('pmCount').textContent = filtered.length + ' scheduled tasks';
+  document.getElementById('pmCards').innerHTML = filtered.map(function(pm){
+    const overdue = pm.status === 'overdue';
+    return '<div class="pm-card">'
+      + '<div class="pm-card__id-row"><span class="pm-card__id">'+pm.id+'</span>'+badge(pm.status)+'</div>'
+      + '<div class="pm-card__title">'+esc(pm.title)+'</div>'
+      + '<div class="pm-card__asset">'+esc(pm.asset)+'</div>'
+      + '<div class="pm-card__grid">'
+      +   '<div><div class="pm-card__field-label">Frequency</div><div class="pm-card__field-value">'+esc(pm.frequency)+'</div></div>'
+      +   '<div><div class="pm-card__field-label">Next Due</div><div class="pm-card__icon-row">'+coloredIcon('calendarCheck',11, overdue?'#EF4444':'#9CA3AF')+'<span class="pm-card__field-value'+(overdue?' pm-card__field-value--overdue':'')+'">'+mmdd(pm.nextDue)+'</span></div></div>'
+      +   '<div><div class="pm-card__field-label">Est. Time</div><div class="pm-card__icon-row">'+icon('clock',11)+'<span class="pm-card__field-value">'+esc(pm.est)+'</span></div></div>'
+      + '</div>'
+      + '<div class="pm-card__footer"><span>'+esc(pm.assignee)+'</span><span>Last: '+mmdd(pm.lastDone)+'</span></div>'
+      + '</div>';
+  }).join('');
+}
+
+/* ============================= PAGE: METERS ============================= */
+function renderMetersPage(){
+  const cards = meters.map(function(m){
+    const pct = m.threshold ? Math.min(100, Math.round((m.lastReading / m.threshold) * 100)) : null;
+    const barColor = m.status === 'critical' ? '#EF4444' : m.status === 'warning' ? '#D97706' : '#16A34A';
+    return '<div class="meter-card" data-meter-id="'+m.id+'">'
+      + '<div class="meter-card__top">'
+      +   '<div>'
+      +     '<div class="meter-card__id-row"><span class="meter-card__id">'+m.id+'</span>'+badge(m.status)+'</div>'
+      +     '<div class="meter-card__name">'+esc(m.name)+'</div>'
+      +     '<div class="meter-card__asset">'+esc(m.asset)+'</div>'
+      +   '</div>'
+      +   '<span class="meter-card__icon">'+icon('activity',16)+'</span>'
+      + '</div>'
+      + '<div class="meter-card__reading-box">'
+      +   '<div class="meter-card__reading-label">Last Reading</div>'
+      +   '<div class="meter-card__reading-value"><span class="meter-card__reading-num">'+fmtInt(m.lastReading)+'</span><span class="meter-card__reading-unit">'+esc(m.unit)+'</span></div>'
+      +   '<div class="meter-card__reading-rate">Rate: '+esc(m.rate)+' · '+mmdd(m.readingDate)+'</div>'
+      + '</div>'
+      + (pct !== null ?
+        ('<div>'
+        + '<div class="meter-card__threshold-row"><span class="cell-dim" style="font-size:12px">Threshold progress</span><span style="color:'+barColor+'">'+pct+'%</span></div>'
+        + '<div class="meter-card__threshold-bar"><div class="meter-card__threshold-fill" style="width:'+pct+'%;background:'+barColor+'"></div></div>'
+        + '<div class="meter-card__threshold-note">Threshold: '+fmtInt(m.threshold)+' '+esc(m.unit)+'</div>'
+        + '</div>') : '')
+      + '<div class="meter-card__enter-wrap">'
+      +   '<button type="button" class="meter-card__add-btn" data-action="meter-toggle-add">+ Enter Reading</button>'
+      +   '<div class="meter-card__add-form" hidden>'
+      +     '<input type="number" class="meter-card__add-input" placeholder="New reading ('+esc(m.unit)+')" />'
+      +     '<button type="button" class="meter-card__save-btn" data-action="meter-save">Save</button>'
+      +     '<button type="button" class="meter-card__cancel-btn" data-action="meter-cancel">Cancel</button>'
+      +   '</div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+
+  return '<div class="page__header">'
+    + '<div><h1 class="page__title">Meters</h1><p class="page__subtitle">'+meters.length+' active meters</p></div>'
+    + '<button type="button" class="btn-primary">'+icon('plus',14)+' Add Meter</button>'
+    + '</div>'
+    + '<div class="cards-2col">'+cards+'</div>';
+}
+
+/* ============================= PAGE: ASSETS ============================= */
+const ASSET_CATEGORIES = ['All','Production Equipment','Material Handling','Utility','HVAC','Process Equipment'];
+const ASSET_CRITICALITIES = ['all','critical','high','medium'];
+
+function renderAssetsShell(){
+  const critChips = ASSET_CRITICALITIES.map(function(c){
+    return '<button type="button" class="filter-chip'+(state.assets.crit===c?' filter-chip--active':'')+'" data-action="assets-crit" data-value="'+c+'">'+c+'</button>';
+  }).join('');
+  const catChips = ASSET_CATEGORIES.map(function(c){
+    return '<button type="button" class="cat-chip'+(state.assets.cat===c?' cat-chip--active':'')+'" data-action="assets-cat" data-value="'+c+'">'+esc(c)+'</button>';
+  }).join('');
+
+  return '<div class="page__header">'
+    + '<div><h1 class="page__title">Assets</h1><p class="page__subtitle" id="assetsCount"></p></div>'
+    + '<button type="button" class="btn-primary">'+icon('plus',14)+' Add Asset</button>'
+    + '</div>'
+    + '<div class="filters-row">'
+    +   '<div class="search-box"><span class="search-box__icon">'+icon('search',13)+'</span><input type="text" class="search-box__input" id="assetsSearch" placeholder="Search assets…" style="width:12rem" /></div>'
+    +   '<div class="filters-row" id="assetsCritChips">'+critChips+'</div>'
+    + '</div>'
+    + '<div class="cat-scroll" id="assetsCatChips">'+catChips+'</div>'
+    + '<div class="cards-2col" id="assetsCards"></div>';
+}
+
+function filteredAssets(){
+  const f = state.assets;
+  const search = f.search.toLowerCase();
+  return assets.filter(function(a){
+    return (f.cat==='All' || a.category===f.cat)
+      && (f.crit==='all' || a.criticality===f.crit)
+      && (search==='' || a.name.toLowerCase().indexOf(search)>-1 || a.id.indexOf(f.search)>-1);
+  });
+}
+
+function updateAssetsList(){
+  const filtered = filteredAssets();
+  document.getElementById('assetsCount').textContent = filtered.length + ' assets';
+  document.getElementById('assetsCards').innerHTML = filtered.map(function(a){
+    const fields = [
+      ['Make', a.make], ['Model', a.model], ['Category', a.category],
+      ['Serial', a.serial], ['Installed', yyyymm(a.installed)], ['Warranty', yyyymm(a.warranty)],
+    ];
+    const fieldsHtml = fields.map(function(f){
+      return '<div><div class="asset-card__field-label">'+f[0]+'</div><div class="asset-card__field-value">'+esc(f[1])+'</div></div>';
+    }).join('');
+    return '<div class="asset-card">'
+      + '<div class="asset-card__top">'
+      +   '<div>'
+      +     '<div class="asset-card__id-row"><span class="asset-card__id">'+a.id+'</span>'+badge(a.status)+badge(a.criticality)+'</div>'
+      +     '<div class="asset-card__name">'+esc(a.name)+'</div>'
+      +     '<div class="asset-card__location">'+esc(a.location)+'</div>'
+      +   '</div>'
+      +   '<span class="asset-card__chevron">'+icon('chevronRight',15)+'</span>'
+      + '</div>'
+      + '<div class="asset-card__grid">'+fieldsHtml+'</div>'
+      + '</div>';
+  }).join('');
+}
+
+/* ============================= PAGE: PEOPLE & TEAMS ============================= */
+function renderPeopleTeamsPage(){
+  const peopleCards = people.map(function(p){
+    const initials = p.name.split(' ').map(function(n){return n[0];}).join('');
+    const certs = p.certifications.map(function(c){ return '<span class="cert-pill">'+esc(c)+'</span>'; }).join('');
+    return '<div class="person-card">'
+      + '<div class="person-card__top">'
+      +   '<div class="person-card__avatar"><span>'+esc(initials)+'</span></div>'
+      +   '<div class="person-card__info">'
+      +     '<div class="person-card__name-row"><span class="person-card__name">'+esc(p.name)+'</span>'+badge(p.status)+'</div>'
+      +     '<div class="person-card__role">'+esc(p.role)+' · '+esc(p.team)+'</div>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="person-card__grid">'
+      +   '<div><div class="person-card__field-label">Contact</div><div class="person-card__email">'+esc(p.email)+'</div><div class="person-card__phone">'+esc(p.phone)+'</div></div>'
+      +   '<div><div class="person-card__field-label">Active WOs</div><div class="person-card__wo-count">'+p.activeWO+'</div></div>'
+      + '</div>'
+      + '<div class="person-card__certs">'+certs+'</div>'
+      + '</div>';
+  }).join('');
+
+  const teamsRows = teams.map(function(t){
+    return '<div class="table__row teams-table__row">'
+      + '<div><div class="cell-sub" style="font-weight:600;color:var(--gray-800)">'+esc(t.name)+'</div><div class="cell-sub-dim">'+t.id+'</div></div>'
+      + '<span class="cell-sub">'+esc(t.lead)+'</span>'
+      + '<span class="cell-sub" style="color:var(--gray-700)">'+t.members+'</span>'
+      + '<span class="cell-sub" style="font-weight:500;color:var(--gray-900)">'+t.activeWO+'</span>'
+      + '</div>';
+  }).join('');
+
+  return '<div class="page__header">'
+    + '<div><h1 class="page__title">People &amp; Teams</h1><p class="page__subtitle">'+people.length+' technicians · '+teams.length+' teams</p></div>'
+    + '<button type="button" class="btn-primary">'+icon('userPlus',14)+' Add Person</button>'
+    + '</div>'
+    + '<div class="tabs">'
+    +   '<button type="button" class="tab-btn'+(state.people.tab==='people'?' tab-btn--active':'')+'" data-action="people-tab" data-value="people">'+icon('user',14)+'People</button>'
+    +   '<button type="button" class="tab-btn'+(state.people.tab==='teams'?' tab-btn--active':'')+'" data-action="people-tab" data-value="teams">'+icon('users',14)+'Teams</button>'
+    + '</div>'
+    + '<div id="peopleTabPanel" class="cards-2col"'+(state.people.tab==='people'?'':' hidden')+'>'+peopleCards+'</div>'
+    + '<div id="teamsTabPanel" class="table-wrap"'+(state.people.tab==='teams'?'':' hidden')+'>'
+    +   '<div class="table-scroll">'
+    +   '<div class="table__head teams-table__head"><span>Team</span><span>Lead</span><span>Members</span><span>Active WOs</span></div>'
+    +   '<div class="table__body">'+teamsRows+'</div>'
+    +   '</div></div>';
+}
+
+/* ============================= PAGE: PARTS & INVENTORY ============================= */
+const PARTS_CATEGORIES = ['All','Seals & Gaskets','Bearings','Filters','Drive Components','Lubricants','Valves'];
+
+function renderPartsShell(){
+  const totalValue = parts.reduce(function(sum,p){ return sum + p.qty * p.unitCost; }, 0);
+  const stats = [
+    { label:'In Stock', count: parts.filter(function(p){return p.status==='in-stock';}).length, cls:'green' },
+    { label:'Low Stock', count: parts.filter(function(p){return p.status==='low-stock';}).length, cls:'amber' },
+    { label:'Out of Stock', count: parts.filter(function(p){return p.status==='out-of-stock';}).length, cls:'red' },
+  ];
+  const statsHtml = stats.map(function(s){
+    return '<div class="stat-card stat-card--'+s.cls+'"><div class="stat-card__count">'+s.count+'</div><div class="stat-card__label">'+s.label+'</div></div>';
+  }).join('');
+  const catChips = PARTS_CATEGORIES.map(function(c){
+    return '<button type="button" class="filter-chip'+(state.parts.cat===c?' filter-chip--active':'')+'" data-action="parts-cat" data-value="'+c+'" style="text-transform:none">'+esc(c)+'</button>';
+  }).join('');
+
+  return '<div class="page__header">'
+    + '<div><h1 class="page__title">Parts &amp; Inventory</h1><p class="page__subtitle">'+parts.length+' parts · $'+Math.round(totalValue).toLocaleString()+' total value</p></div>'
+    + '<button type="button" class="btn-primary">'+icon('plus',14)+' Add Part</button>'
+    + '</div>'
+    + '<div class="stat-row stat-row--3">'+statsHtml+'</div>'
+    + '<div class="filters-row">'
+    +   '<div class="search-box"><span class="search-box__icon">'+icon('search',13)+'</span><input type="text" class="search-box__input" id="partsSearch" placeholder="Part name or part #…" style="width:13rem" /></div>'
+    +   '<div class="filters-row" id="partsCatChips">'+catChips+'</div>'
+    + '</div>'
+    + '<div class="table-wrap"><div class="table-scroll">'
+    +   '<div class="table__head parts-table__head"><span>Part ID</span><span>Name</span><span>Part No.</span><span>Category</span><span class="text-right">Qty</span><span class="text-right">Unit Cost</span><span>Status</span></div>'
+    +   '<div class="table__body" id="partsTableBody"></div>'
+    + '</div></div>';
+}
+
+function filteredParts(){
+  const f = state.parts;
+  const search = f.search.toLowerCase();
+  return parts.filter(function(p){
+    return (f.cat==='All' || p.category===f.cat)
+      && (search==='' || p.name.toLowerCase().indexOf(search)>-1 || p.partNo.indexOf(f.search)>-1);
+  });
+}
+
+function updatePartsList(){
+  const filtered = filteredParts();
+  document.getElementById('partsTableBody').innerHTML = filtered.map(function(p){
+    const qtyColor = p.qty===0 ? 'color:var(--red-600)' : (p.qty<=p.minQty ? 'color:var(--amber-600)' : 'color:var(--gray-800)');
+    return '<div class="table__row parts-table__row">'
+      + '<span class="cell-dim">'+p.id+'</span>'
+      + '<div><div class="cell-sub" style="color:var(--gray-800)">'+esc(p.name)+'</div><div class="cell-sub-dim">Bin: '+esc(p.location)+'</div></div>'
+      + '<span class="cell-text">'+esc(p.partNo)+'</span>'
+      + '<span class="cell-text">'+esc(p.category)+'</span>'
+      + '<div class="text-right"><span style="font-size:0.875rem;font-weight:600;'+qtyColor+'">'+p.qty+'</span><div style="font-size:11px;color:var(--gray-400)">min '+p.minQty+'</div></div>'
+      + '<span class="text-right" style="font-size:0.875rem;color:var(--gray-700)">'+fmtMoney2(p.unitCost)+'</span>'
+      + badge(p.status)
+      + '</div>';
+  }).join('');
+}
+
+/* ============================= PAGE: PURCHASE ORDERS ============================= */
+const PO_STATUSES = ['all','pending-approval','ordered','partial','received'];
+
+function renderPurchaseOrdersPage(){
+  const grandTotal = purchaseOrders.reduce(function(s,p){ return s+p.total; }, 0);
+  const totalSpend = purchaseOrders.filter(function(p){return p.status==='received';}).reduce(function(s,p){ return s+p.total; }, 0);
+
+  const stats = [
+    { label:'Pending Approval', count: purchaseOrders.filter(function(p){return p.status==='pending-approval';}).length, cls:'purple' },
+    { label:'Ordered', count: purchaseOrders.filter(function(p){return p.status==='ordered';}).length, cls:'blue' },
+    { label:'Partial', count: purchaseOrders.filter(function(p){return p.status==='partial';}).length, cls:'amber' },
+    { label:'Received', count: purchaseOrders.filter(function(p){return p.status==='received';}).length, cls:'green' },
+  ];
+  const statsHtml = stats.map(function(s){
+    return '<div class="stat-card stat-card--'+s.cls+'"><div class="stat-card__count">'+s.count+'</div><div class="stat-card__label">'+s.label+'</div></div>';
+  }).join('');
+
+  const statusChips = PO_STATUSES.map(function(s){
+    return '<button type="button" class="filter-chip'+(state.po.status===s?' filter-chip--active':'')+'" data-action="po-status" data-value="'+s+'">'+s+'</button>';
+  }).join('');
+
+  const vendorTotals = [];
+  purchaseOrders.forEach(function(po){
+    const found = vendorTotals.find(function(v){ return v.vendor===po.vendor; });
+    if(found) found.total += po.total; else vendorTotals.push({ vendor: po.vendor, total: po.total });
+  });
+  vendorTotals.sort(function(a,b){ return b.total - a.total; });
+  const vendorHtml = vendorTotals.map(function(v,i){
+    const pct = Math.round((v.total/grandTotal)*100);
+    return '<div class="vendor-row">'
+      + '<span class="vendor-rank">'+(i+1)+'</span>'
+      + '<span class="vendor-name">'+esc(v.vendor)+'</span>'
+      + '<div class="vendor-bar"><div class="vendor-bar__fill" style="width:'+pct+'%"></div></div>'
+      + '<span class="vendor-total">'+fmtMoney(v.total)+'</span>'
+      + '</div>';
+  }).join('');
+
+  return '<div class="page__header">'
+    + '<div><h1 class="page__title">Purchase Orders</h1><p class="page__subtitle">'+purchaseOrders.length+' orders · '+fmtMoney(totalSpend)+' received MTD</p></div>'
+    + '<button type="button" class="btn-primary">'+icon('plus',14)+' New PO</button>'
+    + '</div>'
+    + '<div class="stat-row stat-row--4">'+statsHtml+'</div>'
+    + '<div class="filters-row" id="poStatusChips">'+statusChips+'</div>'
+    + '<div class="table-wrap"><div class="table-scroll">'
+    +   '<div class="table__head po-table__head"><span>PO #</span><span>Vendor</span><span>Requested By</span><span class="text-center">Items</span><span class="text-right">Total</span><span>Status</span><span></span></div>'
+    +   '<div class="table__body" id="poTableBody"></div>'
+    + '</div></div>'
+    + '<div class="section-card">'
+    +   '<div class="section-card__title">Spend by Vendor</div>'
+    +   '<div class="vendor-list">'+vendorHtml+'</div>'
+    + '</div>';
+}
+
+function filteredPO(){
+  const f = state.po;
+  return purchaseOrders.filter(function(po){ return f.status==='all' || po.status===f.status; });
+}
+
+function updatePOList(){
+  const filtered = filteredPO();
+  document.getElementById('poTableBody').innerHTML = filtered.map(function(po){
+    return '<div class="table__row po-table__row">'
+      + '<span class="cell-dim">'+po.id+'</span>'
+      + '<div><div class="cell-sub" style="font-weight:500;color:var(--gray-800)">'+esc(po.vendor)+'</div><div class="cell-sub-dim">'+mmdd(po.ordered)+'</div></div>'
+      + '<span class="cell-sub">'+esc(po.requestedBy)+'</span>'
+      + '<span class="text-center" style="font-size:0.875rem;color:var(--gray-700)">'+po.items+'</span>'
+      + '<span class="text-right" style="font-size:0.875rem;font-weight:600;color:var(--gray-800)">'+fmtMoney(po.total)+'</span>'
+      + badge(po.status)
+      + '<span class="chevron-cell">'+icon('chevronRight',14)+'</span>'
+      + '</div>';
+  }).join('');
+}
+
+/* ============================= WORK ORDER DETAIL DRAWER ============================= */
+const woDrawerOverlay = document.getElementById('woDrawerOverlay');
+const woDrawer = document.getElementById('woDrawer');
+const woDrawerBackdrop = document.getElementById('woDrawerBackdrop');
+
+function openWODrawer(id){
+  const wo = workOrders.find(function(w){ return w.id === id; });
+  if(!wo) return;
+
+  const fields = [
+    ['Category', wo.category], ['Asset', wo.asset], ['Assignee', wo.assignee], ['Est. Duration', wo.est],
+    ['Due Date', wo.due], ['Created', wo.created], ['Est. Cost', fmtMoney(wo.cost)],
+  ];
+  const fieldsHtml = fields.map(function(f){
+    return '<div><p class="wo-drawer__field-label">'+f[0]+'</p><p class="wo-drawer__field-value">'+esc(f[1])+'</p></div>';
+  }).join('');
+
+  const partsList = [
+    ['Hydraulic Seal Kit — Parker 2200', '×1'],
+    ['Synthetic Grease — Mobilux EP2', '×0.5 lb'],
+  ];
+  const partsHtml = partsList.map(function(p){
+    return '<div class="wo-drawer__parts-row"><span>'+p[0]+'</span><span>'+p[1]+'</span></div>';
+  }).join('');
+
+  const activity = [
+    { time:'08:42', user:'Marcus Velez', note:'Work order accepted and parts staged.' },
+    { time:'09:15', user:'Marcus Velez', note:'Started seal removal. Moderate fluid contamination found.' },
+    { time:'11:00', user:'Angela Torres', note:'Cost estimate updated to reflect extended labor.' },
+  ];
+  const activityHtml = activity.map(function(a){
+    return '<div class="wo-drawer__activity-item"><span class="wo-drawer__activity-time">'+a.time+'</span><div><span class="wo-drawer__activity-user">'+a.user+'</span><span class="wo-drawer__activity-note"> — '+a.note+'</span></div></div>';
+  }).join('');
+
+  woDrawer.innerHTML =
+    '<div class="wo-drawer__header">'
+    + '<div><p class="wo-drawer__id">'+wo.id+'</p><h2 class="wo-drawer__title">'+esc(wo.title)+'</h2></div>'
+    + '<button type="button" class="wo-drawer__close" id="woDrawerClose">'+icon('x',15)+'</button>'
+    + '</div>'
+    + '<div class="wo-drawer__body">'
+    +   '<div class="wo-drawer__badges">'+badge(wo.status,'md')+badge(wo.priority,'md')+'</div>'
+    +   '<div class="wo-drawer__grid">'+fieldsHtml+'</div>'
+    +   '<div><p class="wo-drawer__section-label">Description</p><p class="wo-drawer__desc">Inspect and replace faulty seals on the hydraulic press unit. Check for signs of fluid leakage around cylinder rod and piston area. Document findings and replace all seals in the kit.</p></div>'
+    +   '<div><p class="wo-drawer__section-label">Parts Required</p><div class="wo-drawer__parts">'+partsHtml+'</div></div>'
+    +   '<div><p class="wo-drawer__section-label">Activity</p><div class="wo-drawer__activity">'+activityHtml+'</div></div>'
+    + '</div>'
+    + '<div class="wo-drawer__footer">'
+    +   '<button type="button" class="btn-primary">Update Status</button>'
+    +   '<button type="button" class="btn-secondary">Edit</button>'
+    + '</div>';
+
+  woDrawerOverlay.hidden = false;
+  document.getElementById('woDrawerClose').addEventListener('click', closeWODrawer);
+}
+function closeWODrawer(){ woDrawerOverlay.hidden = true; woDrawer.innerHTML=''; }
+woDrawerBackdrop.addEventListener('click', closeWODrawer);
+
+/* ============================= CONTENT INIT ============================= */
+const content = document.getElementById('content');
+content.innerHTML =
+  '<section class="page" id="page-dashboard">'+renderDashboard()+'</section>'
+  + '<section class="page" id="page-work-orders" hidden>'+renderWorkOrdersShell()+'</section>'
+  + '<section class="page" id="page-pm" hidden>'+renderPMShell()+'</section>'
+  + '<section class="page" id="page-meters" hidden>'+renderMetersPage()+'</section>'
+  + '<section class="page" id="page-assets" hidden>'+renderAssetsShell()+'</section>'
+  + '<section class="page" id="page-people" hidden>'+renderPeopleTeamsPage()+'</section>'
+  + '<section class="page" id="page-parts" hidden>'+renderPartsShell()+'</section>'
+  + '<section class="page" id="page-purchase-orders" hidden>'+renderPurchaseOrdersPage()+'</section>';
+
+updateWorkOrdersList();
+updatePMList();
+updateAssetsList();
+updatePartsList();
+updatePOList();
+
+/* ============================= EVENT DELEGATION ============================= */
+
+/* Work Orders page */
+const woPage = document.getElementById('page-work-orders');
+woPage.addEventListener('click', function(e){
+  const chip = e.target.closest('[data-action="wo-priority"]');
+  if(chip){
+    state.wo.priority = chip.getAttribute('data-value');
+    document.querySelectorAll('#woPriorityChips .filter-chip').forEach(function(c){ c.classList.toggle('filter-chip--active', c===chip); });
+    updateWorkOrdersList();
+    return;
+  }
+  const chip2 = e.target.closest('[data-action="wo-status"]');
+  if(chip2){
+    state.wo.status = chip2.getAttribute('data-value');
+    document.querySelectorAll('#woStatusChips .filter-chip').forEach(function(c){ c.classList.toggle('filter-chip--active', c===chip2); });
+    updateWorkOrdersList();
+    return;
+  }
+  const row = e.target.closest('[data-wo-id]');
+  if(row){ openWODrawer(row.getAttribute('data-wo-id')); }
+});
+document.getElementById('woSearch').addEventListener('input', function(e){
+  state.wo.search = e.target.value;
+  updateWorkOrdersList();
+});
+
+/* Dashboard active-WO mini rows open drawer too */
+document.getElementById('page-dashboard').addEventListener('click', function(e){
+  const row = e.target.closest('[data-wo-id]');
+  if(row){ openWODrawer(row.getAttribute('data-wo-id')); }
+});
+
+/* PM page */
+const pmPage = document.getElementById('page-pm');
+pmPage.addEventListener('click', function(e){
+  const chip = e.target.closest('[data-action="pm-freq"]');
+  if(chip){
+    state.pm.freq = chip.getAttribute('data-value');
+    document.querySelectorAll('#pmFreqChips .filter-chip').forEach(function(c){ c.classList.toggle('filter-chip--active', c===chip); });
+    updatePMList();
+  }
+});
+document.getElementById('pmSearch').addEventListener('input', function(e){
+  state.pm.search = e.target.value;
+  updatePMList();
+});
+
+/* Assets page */
+const assetsPage = document.getElementById('page-assets');
+assetsPage.addEventListener('click', function(e){
+  const critChip = e.target.closest('[data-action="assets-crit"]');
+  if(critChip){
+    state.assets.crit = critChip.getAttribute('data-value');
+    document.querySelectorAll('#assetsCritChips .filter-chip').forEach(function(c){ c.classList.toggle('filter-chip--active', c===critChip); });
+    updateAssetsList();
+    return;
+  }
+  const catChip = e.target.closest('[data-action="assets-cat"]');
+  if(catChip){
+    state.assets.cat = catChip.getAttribute('data-value');
+    document.querySelectorAll('#assetsCatChips .cat-chip').forEach(function(c){ c.classList.toggle('cat-chip--active', c===catChip); });
+    updateAssetsList();
+  }
+});
+document.getElementById('assetsSearch').addEventListener('input', function(e){
+  state.assets.search = e.target.value;
+  updateAssetsList();
+});
+
+/* Parts page */
+const partsPage = document.getElementById('page-parts');
+partsPage.addEventListener('click', function(e){
+  const chip = e.target.closest('[data-action="parts-cat"]');
+  if(chip){
+    state.parts.cat = chip.getAttribute('data-value');
+    document.querySelectorAll('#partsCatChips .filter-chip').forEach(function(c){ c.classList.toggle('filter-chip--active', c===chip); });
+    updatePartsList();
+  }
+});
+document.getElementById('partsSearch').addEventListener('input', function(e){
+  state.parts.search = e.target.value;
+  updatePartsList();
+});
+
+/* Purchase Orders page */
+const poPage = document.getElementById('page-purchase-orders');
+poPage.addEventListener('click', function(e){
+  const chip = e.target.closest('[data-action="po-status"]');
+  if(chip){
+    state.po.status = chip.getAttribute('data-value');
+    document.querySelectorAll('#poStatusChips .filter-chip').forEach(function(c){ c.classList.toggle('filter-chip--active', c===chip); });
+    updatePOList();
+  }
+});
+
+/* People & Teams page */
+const peoplePage = document.getElementById('page-people');
+peoplePage.addEventListener('click', function(e){
+  const tabBtn = e.target.closest('[data-action="people-tab"]');
+  if(tabBtn){
+    state.people.tab = tabBtn.getAttribute('data-value');
+    document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.toggle('tab-btn--active', b===tabBtn); });
+    document.getElementById('peopleTabPanel').hidden = state.people.tab !== 'people';
+    document.getElementById('teamsTabPanel').hidden = state.people.tab !== 'teams';
+  }
+});
+
+/* Meters page */
+const metersPage = document.getElementById('page-meters');
+metersPage.addEventListener('click', function(e){
+  const toggleBtn = e.target.closest('[data-action="meter-toggle-add"]');
+  if(toggleBtn){
+    const wrap = toggleBtn.closest('.meter-card__enter-wrap');
+    toggleBtn.hidden = true;
+    const form = wrap.querySelector('.meter-card__add-form');
+    form.hidden = false;
+    form.querySelector('input').focus();
+    return;
+  }
+  const saveBtn = e.target.closest('[data-action="meter-save"]');
+  const cancelBtn = e.target.closest('[data-action="meter-cancel"]');
+  if(saveBtn || cancelBtn){
+    const wrap = (saveBtn||cancelBtn).closest('.meter-card__enter-wrap');
+    wrap.querySelector('.meter-card__add-form').hidden = true;
+    wrap.querySelector('[data-action="meter-toggle-add"]').hidden = false;
+  }
+});
+
+})();
+</script>
+</body>
+</html>
